@@ -1,0 +1,43 @@
+# =========================
+# 1. Datasets & Large Files
+# =========================
+# ละเว้นโฟลเดอร์ที่เก็บข้อมูลทั้งหมด
+dataset/
+datasets/
+data/
+Data/
+
+# ละเว้นไฟล์ข้อมูลขนาดใหญ่ (เผื่อเผลอวางไว้นอกโฟลเดอร์)
+*.csv
+*.tsv
+*.pcap
+*.pcapng
+*.zip
+*.tar.gz
+*.rar
+*.log
+
+# =========================
+# 2. Python & Environments
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+soc-env/
+.venv/
+
+# =========================
+# 3. Jupyter Notebooks
+# =========================
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/
+
+# =========================
+# 4. Security & Configs
+# =========================
+# ห้ามเอาไฟล์ที่มี Password หรือ API Key ของ OpenCTI ขึ้น GitHub เด็ดขาด!
+.env
+*.pem
+secrets.json
