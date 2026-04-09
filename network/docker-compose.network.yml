@@ -1,0 +1,51 @@
+version: "3.9"
+
+services:
+
+  app:
+    image: nginx:latest
+    container_name: app
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    networks:
+      - targets_zone
+      - soc_shared
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost || exit 1"]
+      interval: 30s
+      retries: 5
+
+  monitoring:
+    image: prom/prometheus:latest
+    container_name: monitoring_service
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - monitoring_zone
+      - soc_shared
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:9090/-/healthy || exit 1"]
+
+networks:
+
+  monitoring_zone:
+    name: monitoring_zone
+    driver: bridge
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.20.20.0/24
+
+  soc_shared:
+    name: soc_shared
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.40.0/24
+
+volumes:
+  mongo_data:
