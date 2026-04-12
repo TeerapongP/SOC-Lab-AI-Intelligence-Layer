@@ -1,0 +1,87 @@
+{
+  "uid": "soc-main",
+  "title": "SOC Overview — All Layers",
+  "tags": ["soc", "security"],
+  "timezone": "Asia/Bangkok",
+  "refresh": "10s",
+  "panels": [
+    {
+      "id": 1,
+      "title": "L1 — Log ingest rate / hour",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 6 },
+      "targets": [{
+        "refId": "A",
+        "query": "from(bucket: \"soc_metrics\") |> range(start: -1h) |> filter(fn: (r) => r._measurement == \"soc_pipeline\" and r.layer == \"L1\" and r._field == \"ingest_rate\")"
+      }]
+    },
+    {
+      "id": 2,
+      "title": "L2 — Enrich latency (ms) · IoC match rate (%)",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 6 },
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"soc_metrics\") |> range(start: -1h) |> filter(fn: (r) => r._measurement == \"soc_pipeline\" and r.layer == \"L2\" and r._field == \"enrich_latency_ms\")"
+        },
+        {
+          "refId": "B",
+          "query": "from(bucket: \"soc_metrics\") |> range(start: -1h) |> filter(fn: (r) => r._measurement == \"soc_pipeline\" and r.layer == \"L2\" and r._field == \"ioc_match_rate\")"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "L3 — Risk score trend",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 6, "w": 12, "h": 6 },
+      "targets": [{
+        "refId": "A",
+        "query": "from(bucket: \"soc_metrics\") |> range(start: -1h) |> filter(fn: (r) => r._measurement == \"soc_alert\" and r._field == \"risk_score\")"
+      }]
+    },
+    {
+      "id": 4,
+      "title": "L3 — MTTD timeline (s)",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 6, "w": 12, "h": 6 },
+      "targets": [{
+        "refId": "A",
+        "query": "from(bucket: \"soc_metrics\") |> range(start: -24h) |> filter(fn: (r) => r._measurement == \"soc_alert\" and r._field == \"mttd_s\")"
+      }]
+    },
+    {
+      "id": 5,
+      "title": "LLM — Response time (ms)",
+      "type": "gauge",
+      "gridPos": { "x": 0, "y": 12, "w": 6, "h": 4 },
+      "targets": [{
+        "refId": "A",
+        "query": "from(bucket: \"soc_metrics\") |> range(start: -5m) |> filter(fn: (r) => r._measurement == \"soc_alert\" and r._field == \"response_ms\") |> mean()"
+      }],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "minVizValue": 0, "maxVizValue": 5000 }
+    },
+    {
+      "id": 6,
+      "title": "LLM — Faithfulness score",
+      "type": "gauge",
+      "gridPos": { "x": 6, "y": 12, "w": 6, "h": 4 },
+      "targets": [{
+        "refId": "A",
+        "query": "from(bucket: \"soc_metrics\") |> range(start: -5m) |> filter(fn: (r) => r._measurement == \"soc_alert\" and r._field == \"faithfulness_score\") |> mean()"
+      }],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "minVizValue": 0, "maxVizValue": 1 }
+    },
+    {
+      "id": 7,
+      "title": "Alert count by priority",
+      "type": "piechart",
+      "gridPos": { "x": 12, "y": 12, "w": 12, "h": 4 },
+      "targets": [{
+        "refId": "A",
+        "query": "from(bucket: \"soc_metrics\") |> range(start: -24h) |> filter(fn: (r) => r._measurement == \"soc_alert\" and r._field == \"risk_score\") |> group(columns: [\"priority\"]) |> count()"
+      }]
+    }
+  ]
+}
