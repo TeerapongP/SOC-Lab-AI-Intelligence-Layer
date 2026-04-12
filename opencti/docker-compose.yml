@@ -1,10 +1,24 @@
-
 version: '3.8'
 
+# ═══════════════════════════════════════════════════════
+#  OpenCTI Stack — M2 (ARM64) Compatible
+#  Includes: Platform, Worker, and all Feed Connectors
+# ═══════════════════════════════════════════════════════
+#
+#  BEFORE FIRST RUN:
+#    docker network create soc_shared
+#    docker compose up -d
+#
+# ═══════════════════════════════════════════════════════
+
 services:
-# ───────────────── Redis ─────────────────
+
+# ─────────────────────────────────────────────────────
+#  Redis  ✓ Native ARM64
+# ─────────────────────────────────────────────────────
   opencti-redis:
     image: redis:7.2-alpine
+    platform: linux/arm64
     restart: unless-stopped
     networks:
       - soc_mgmt
@@ -12,7 +26,7 @@ services:
       - opencti_redis_data:/data
     command: >
       redis-server
-      --maxmemory ${REDIS_MAXMEMORY}
+      --maxmemory ${REDIS_MAXMEMORY:-512mb}
       --maxmemory-policy allkeys-lru
       --appendonly yes
     healthcheck:
@@ -21,9 +35,12 @@ services:
       timeout: 5s
       retries: 5
 
-# ───────────────── Elasticsearch ─────────────────
+# ─────────────────────────────────────────────────────
+#  Elasticsearch  ✓ Native ARM64 (v8.13.4)
+# ─────────────────────────────────────────────────────
   opencti-elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.3
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
+    platform: linux/arm64
     restart: unless-stopped
     networks:
       - soc_mgmt
@@ -33,12 +50,8 @@ services:
       discovery.type: single-node
       xpack.security.enabled: "false"
       xpack.ml.enabled: "false"
-      bootstrap.memory_lock: "true"
-      ES_JAVA_OPTS: ${ES_JAVA_OPTS}
+      ES_JAVA_OPTS: ${ES_JAVA_OPTS:--Xms1g -Xmx1g}
     ulimits:
-      memlock:
-        soft: -1
-        hard: -1
       nofile:
         soft: 65536
         hard: 65536
@@ -47,10 +60,17 @@ services:
       interval: 30s
       timeout: 10s
       retries: 10
+      start_period: 60s
 
-# ───────────────── MinIO ─────────────────
+# ─────────────────────────────────────────────────────
+#  MinIO  ✓ Native ARM64
+#  FIX: extended start_period to 60s — MinIO starts
+#       successfully but HTTP endpoint needs more time
+#       to become ready on ARM64/Rosetta
+# ─────────────────────────────────────────────────────
   opencti-minio:
-    image: minio/minio:latest
+    image: minio/minio:RELEASE.2024-01-18T22-51-28Z
+    platform: linux/arm64
     restart: unless-stopped
     networks:
       - soc_mgmt
@@ -64,14 +84,18 @@ services:
       - "9000:9000"
       - "9001:9001"
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:9000/minio/health/live"]
-      interval: 30s
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 15s
       timeout: 10s
-      retries: 5
+      retries: 10
+      start_period: 60s
 
-# ───────────────── RabbitMQ ─────────────────
+# ─────────────────────────────────────────────────────
+#  RabbitMQ  ✓ Native ARM64
+# ─────────────────────────────────────────────────────
   opencti-rabbitmq:
     image: rabbitmq:3.12-management
+    platform: linux/arm64
     restart: unless-stopped
     networks:
       - soc_mgmt
@@ -87,10 +111,14 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+      start_period: 30s
 
-# ───────────────── OpenCTI Platform ─────────────────
+# ─────────────────────────────────────────────────────
+#  OpenCTI Platform  ~ Rosetta 2 on M2
+# ─────────────────────────────────────────────────────
   opencti-platform:
     image: opencti/platform:5.12.17
+    platform: linux/amd64
     restart: unless-stopped
     depends_on:
       opencti-redis:
@@ -108,12 +136,14 @@ services:
       - "8082:8080"
     environment:
       APP__PORT: 8080
-      APP__BASE_URL: http://localhost:8082
+      APP__BASE_URL: ${OPENCTI_BASE_URL:-http://localhost:8082}
       APP__ADMIN__EMAIL: ${OPENCTI_ADMIN_EMAIL}
       APP__ADMIN__PASSWORD: ${OPENCTI_ADMIN_PASSWORD}
       APP__ADMIN__TOKEN: ${OPENCTI_ADMIN_TOKEN}
 
       REDIS__HOSTNAME: opencti-redis
+      REDIS__PORT: 6379
+
       ELASTICSEARCH__URL: http://opencti-elasticsearch:9200
 
       MINIO__ENDPOINT: opencti-minio
@@ -123,8 +153,11 @@ services:
       MINIO__SECRET_KEY: ${MINIO_ROOT_PASSWORD}
 
       RABBITMQ__HOSTNAME: opencti-rabbitmq
+      RABBITMQ__PORT: 5672
       RABBITMQ__USERNAME: ${RABBITMQ_DEFAULT_USER}
       RABBITMQ__PASSWORD: ${RABBITMQ_DEFAULT_PASS}
+
+      NODE_OPTIONS: --max-old-space-size=4096
 
     deploy:
       resources:
@@ -138,9 +171,12 @@ services:
       retries: 10
       start_period: 120s
 
-# ───────────────── OpenCTI Worker ─────────────────
+# ─────────────────────────────────────────────────────
+#  OpenCTI Worker  ~ Rosetta 2 on M2
+# ─────────────────────────────────────────────────────
   opencti-worker:
     image: opencti/worker:5.12.17
+    platform: linux/amd64
     restart: unless-stopped
     depends_on:
       opencti-platform:
@@ -150,282 +186,334 @@ services:
       - soc_shared
     environment:
       OPENCTI_URL: http://opencti-platform:8080
-      OPENCTI_TOKEN: ${OPENCTI_TOKEN}
+      OPENCTI_TOKEN: ${OPENCTI_ADMIN_TOKEN}
       WORKER_LOG_LEVEL: info
+    deploy:
+      resources:
+        limits:
+          memory: 1G
 
-# ───────────────── MITRE ATT&CK Connector ─────────────────
+# ═══════════════════════════════════════════════════════
+#  CONNECTORS — EXTERNAL IMPORT
+# ═══════════════════════════════════════════════════════
+
+# ─────────────────────────────────────────────────────
+#  Connector: MITRE ATT&CK
+# ─────────────────────────────────────────────────────
   connector-mitre:
+    image: opencti/connector-mitre:5.12.17
     platform: linux/amd64
-    image: opencti/connector-mitre:latest
     restart: unless-stopped
     depends_on:
       opencti-platform:
         condition: service_healthy
     networks:
       - soc_shared
+      - soc_mgmt
     environment:
       OPENCTI_URL: http://opencti-platform:8080
-      OPENCTI_TOKEN: ${OPENCTI_TOKEN}
-      CONNECTOR_ID: ${MITRE_CONNECTOR_ID:-a4d98e31-5de0-4c7f-838b-51605edf86e0}
-      CONNECTOR_NAME: MITRE ATT&CK
-      CONNECTOR_SCOPE: mitre
-      CONNECTOR_LOG_LEVEL: error
-      # MITRE_INTERVAL: 7  # In days
-      # MITRE_REMOVE_STATEMENT_MARKING: true  # Optional
+      OPENCTI_TOKEN: ${OPENCTI_ADMIN_TOKEN}
+      CONNECTOR_ID: ${MITRE_CONNECTOR_ID}
+      CONNECTOR_TYPE: EXTERNAL_IMPORT
+      CONNECTOR_NAME: "MITRE ATT&CK"
+      CONNECTOR_SCOPE: identity,attack-pattern,course-of-action,intrusion-set,campaign,malware,tool
+      CONNECTOR_CONFIDENCE_LEVEL: 75
+      CONNECTOR_UPDATE_EXISTING_DATA: "true"
+      CONNECTOR_LOG_LEVEL: info
+      MITRE_REMOVE_STATEMENT_MARKING: "true"
+      MITRE_INTERVAL: 7
+    deploy:
+      resources:
+        limits:
+          memory: 512M
 
-# ───────────────── AlienVault OTX Connector ─────────────────
+# ─────────────────────────────────────────────────────
+#  Connector: AlienVault OTX
+# ─────────────────────────────────────────────────────
   connector-alienvault:
+    image: opencti/connector-alienvault:5.12.17
     platform: linux/amd64
-    image: opencti/connector-alienvault:latest
     restart: unless-stopped
     depends_on:
       opencti-platform:
         condition: service_healthy
     networks:
       - soc_shared
+      - soc_mgmt
     environment:
       OPENCTI_URL: http://opencti-platform:8080
-      OPENCTI_TOKEN: ${OPENCTI_TOKEN}
-      CONNECTOR_ID: ${OTX_CONNECTOR_ID:-8bbae241-6289-4faf-b7d6-7503bed50bbc}
-      CONNECTOR_NAME: AlienVault
-      CONNECTOR_SCOPE: alienvault
-      CONNECTOR_LOG_LEVEL: error
-      CONNECTOR_DURATION_PERIOD: PT30M
+      OPENCTI_TOKEN: ${OPENCTI_ADMIN_TOKEN}
+      CONNECTOR_ID: ${OTX_CONNECTOR_ID}
+      CONNECTOR_TYPE: EXTERNAL_IMPORT
+      CONNECTOR_NAME: "AlienVault OTX"
+      CONNECTOR_SCOPE: stix2
+      CONNECTOR_CONFIDENCE_LEVEL: 40
+      CONNECTOR_UPDATE_EXISTING_DATA: "false"
+      CONNECTOR_LOG_LEVEL: info
       ALIENVAULT_BASE_URL: https://otx.alienvault.com
       ALIENVAULT_API_KEY: ${OTX_API_KEY}
       ALIENVAULT_TLP: White
       ALIENVAULT_CREATE_OBSERVABLES: "true"
       ALIENVAULT_CREATE_INDICATORS: "true"
-      ALIENVAULT_PULSE_START_TIMESTAMP: 2020-05-01T00:00:00
+      ALIENVAULT_PULSE_START_TIMESTAMP: 2024-01-01T00:00:00
       ALIENVAULT_REPORT_TYPE: threat-report
       ALIENVAULT_REPORT_STATUS: New
-      ALIENVAULT_GUESS_MALWARE: "false"
-      ALIENVAULT_GUESS_CVE: "false"
-      ALIENVAULT_EXCLUDED_PULSE_INDICATOR_TYPES: "FileHash-MD5,FileHash-SHA1"
+      ALIENVAULT_GUESS_MALWARE: "true"
+      ALIENVAULT_GUESS_CVE: "true"
+      ALIENVAULT_EXCLUDED_PULSE_INDICATOR_TYPES: ""
       ALIENVAULT_ENABLE_RELATIONSHIPS: "true"
       ALIENVAULT_ENABLE_ATTACK_PATTERNS_INDICATES: "true"
-      ALIENVAULT_FILTER_INDICATORS: "false"
-      ALIENVAULT_DEFAULT_X_OPENCTI_SCORE: 50
-      ALIENVAULT_X_OPENCTI_SCORE_IP: 60
-      ALIENVAULT_X_OPENCTI_SCORE_DOMAIN: 70
-      ALIENVAULT_X_OPENCTI_SCORE_HOSTNAME: 75
-      ALIENVAULT_X_OPENCTI_SCORE_EMAIL: 70
-      ALIENVAULT_X_OPENCTI_SCORE_FILE: 80
-      ALIENVAULT_X_OPENCTI_SCORE_URL: 80
-      ALIENVAULT_X_OPENCTI_SCORE_MUTEX: 60
-      ALIENVAULT_X_OPENCTI_SCORE_CRYPTOCURRENCY_WALLET: 80
+      ALIENVAULT_INTERVAL_SEC: 1800
+    deploy:
+      resources:
+        limits:
+          memory: 512M
 
-# ───────────────── Abuse.ch SSL Blacklist Connector ─────────────────
+# ─────────────────────────────────────────────────────
+#  Connector: Abuse.ch SSL Blacklist
+# ─────────────────────────────────────────────────────
   connector-abuse-ssl:
+    image: opencti/connector-abuse-ssl:5.12.17
     platform: linux/amd64
-    image: opencti/connector-abuse-ssl:latest
     restart: unless-stopped
     depends_on:
       opencti-platform:
         condition: service_healthy
     networks:
       - soc_shared
+      - soc_mgmt
     environment:
       OPENCTI_URL: http://opencti-platform:8080
-      OPENCTI_TOKEN: ${OPENCTI_TOKEN}
-      CONNECTOR_ID: ${ABUSE_SSL_CONNECTOR_ID:-a31ca6fe-283d-4a41-b8a5-b3a0e1234567}
+      OPENCTI_TOKEN: ${OPENCTI_ADMIN_TOKEN}
+      CONNECTOR_ID: ${ABUSE_SSL_CONNECTOR_ID}
+      CONNECTOR_TYPE: EXTERNAL_IMPORT
       CONNECTOR_NAME: "Abuse.ch SSL Blacklist"
-      CONNECTOR_SCOPE: abusessl
-      CONNECTOR_LOG_LEVEL: error
-      ABUSESSL_URL: https://sslbl.abuse.ch/blacklist/sslipblacklist.csv
-      ABUSESSL_INTERVAL: 360
+      CONNECTOR_CONFIDENCE_LEVEL: 70
+      CONNECTOR_UPDATE_EXISTING_DATA: "true"
+      CONNECTOR_LOG_LEVEL: info
+      ABUSE_SSL_URL: https://sslbl.abuse.ch/blacklist/sslblacklist.csv
+      ABUSE_SSL_INTERVAL: 3600
+    deploy:
+      resources:
+        limits:
+          memory: 256M
 
-# ───────────────── AbuseIPDB IP Blacklist Connector ─────────────────
-  connector-abuseipdb-ipblacklist:
-    platform: linux/amd64
-    image: opencti/connector-abuseipdb-ipblacklist:latest
-    restart: unless-stopped
-    depends_on:
-      opencti-platform:
-        condition: service_healthy
-    networks:
-      - soc_shared
-    environment:
-      OPENCTI_URL: http://opencti-platform:8080
-      OPENCTI_TOKEN: ${OPENCTI_TOKEN}
-      CONNECTOR_ID: ${ABUSEIPDB_CONNECTOR_ID:-b42db7gf-394e-5b52-c9b6-c4b1f2345678}
-      CONNECTOR_NAME: AbuseIPDB IP Blacklist
-      CONNECTOR_SCOPE: abuseipdb
-      CONNECTOR_LOG_LEVEL: error
-      # CONNECTOR_DURATION_PERIOD: PT12H  # ISO8601 format
-      ABUSEIPDB_API_URL: https://api.abuseipdb.com/api/v2/blacklist
-      ABUSEIPDB_API_KEY: ${ABUSEIPDB_API_KEY}
-      ABUSEIPDB_SCORE: ${ABUSEIPDB_SCORE:-95}
-      # ABUSEIPDB_LIMIT: 500000
-      # ABUSEIPDB_CREATE_INDICATOR: false
-      # ABUSEIPDB_TLP_LEVEL: clear
-      # ABUSEIPDB_IPVERSION: mixed
-      # ABUSEIPDB_EXCEPT_COUNTRY:
-      # ABUSEIPDB_ONLY_COUNTRY:
-
-# ───────────────── VirusTotal Livehunt Notifications Connector ─────────────────
-  connector-virustotal-livehunt-notifications:
-    platform: linux/amd64
-    image: opencti/connector-virustotal-livehunt-notifications:latest
-    restart: unless-stopped
-    depends_on:
-      opencti-platform:
-        condition: service_healthy
-    networks:
-      - soc_shared
-    environment:
-      OPENCTI_URL: http://opencti-platform:8080
-      OPENCTI_TOKEN: ${OPENCTI_TOKEN}
-      CONNECTOR_ID: ${VIRUSTOTAL_LIVEHUNT_CONNECTOR_ID:-virustotal-livehunt-notifications}
-      CONNECTOR_NAME: "VirusTotal Livehunt Notifications"
-      CONNECTOR_SCOPE: "StixFile,Indicator,Incident"
-      CONNECTOR_LOG_LEVEL: error
-      CONNECTOR_DURATION_PERIOD: PT5M
-      VIRUSTOTAL_LIVEHUNT_NOTIFICATIONS_API_KEY: ${VIRUSTOTAL_API_KEY}
-      # VIRUSTOTAL_LIVEHUNT_NOTIFICATIONS_TLP_LEVEL: clear
-      VIRUSTOTAL_LIVEHUNT_NOTIFICATIONS_CREATE_ALERT: "True"
-      VIRUSTOTAL_LIVEHUNT_NOTIFICATIONS_EXTENSIONS: "exe,dll"
-      VIRUSTOTAL_LIVEHUNT_NOTIFICATIONS_MIN_FILE_SIZE: 1000
-      VIRUSTOTAL_LIVEHUNT_NOTIFICATIONS_MAX_FILE_SIZE: 52428800
-      VIRUSTOTAL_LIVEHUNT_NOTIFICATIONS_MAX_AGE_DAYS: 3
-      VIRUSTOTAL_LIVEHUNT_NOTIFICATIONS_MIN_POSITIVES: 5
-      VIRUSTOTAL_LIVEHUNT_NOTIFICATIONS_CREATE_FILE: "True"
-      VIRUSTOTAL_LIVEHUNT_NOTIFICATIONS_UPLOAD_ARTIFACT: "False"
-      VIRUSTOTAL_LIVEHUNT_NOTIFICATIONS_CREATE_YARA_RULE: "True"
-      VIRUSTOTAL_LIVEHUNT_NOTIFICATIONS_DELETE_NOTIFICATION: "False"
-      VIRUSTOTAL_LIVEHUNT_NOTIFICATIONS_FILTER_WITH_TAG: "mytag"
-
-# ───────────────── URLhaus Connector ─────────────────
+# ─────────────────────────────────────────────────────
+#  Connector: URLhaus
+# ─────────────────────────────────────────────────────
   connector-urlhaus:
+    image: opencti/connector-urlhaus:5.12.17
     platform: linux/amd64
-    image: opencti/connector-urlhaus:latest
     restart: unless-stopped
     depends_on:
       opencti-platform:
         condition: service_healthy
     networks:
       - soc_shared
+      - soc_mgmt
     environment:
       OPENCTI_URL: http://opencti-platform:8080
-      OPENCTI_TOKEN: ${OPENCTI_TOKEN}
-      CONNECTOR_ID: ${URLHAUS_CONNECTOR_ID:-urlhaus-connector}
-      CONNECTOR_NAME: "Abuse.ch URLhaus"
-      CONNECTOR_SCOPE: urlhaus
-      CONNECTOR_LOG_LEVEL: error
-      URLHAUS_INTERVAL: 3
+      OPENCTI_TOKEN: ${OPENCTI_ADMIN_TOKEN}
+      CONNECTOR_ID: ${URLHAUS_CONNECTOR_ID}
+      CONNECTOR_TYPE: EXTERNAL_IMPORT
+      CONNECTOR_NAME: "URLhaus"
+      CONNECTOR_CONFIDENCE_LEVEL: 40
+      CONNECTOR_UPDATE_EXISTING_DATA: "false"
+      CONNECTOR_LOG_LEVEL: info
       URLHAUS_CSV_URL: https://urlhaus.abuse.ch/downloads/csv_recent/
-      URLHAUS_DEFAULT_X_OPENCTI_SCORE: 80
       URLHAUS_IMPORT_OFFLINE: "true"
       URLHAUS_THREATS_FROM_LABELS: "true"
+      URLHAUS_INTERVAL: 3600
+    deploy:
+      resources:
+        limits:
+          memory: 256M
 
-# ───────────────── VirusTotal Connector ─────────────────
-  connector-virustotal:
+# ─────────────────────────────────────────────────────
+#  Connector: VirusTotal Livehunt Notifications
+# ─────────────────────────────────────────────────────
+  connector-virustotal-livehunt:
+    image: opencti/connector-virustotal-livehunt-notifications:5.12.17
     platform: linux/amd64
-    image: opencti/connector-virustotal:latest
     restart: unless-stopped
     depends_on:
       opencti-platform:
         condition: service_healthy
     networks:
       - soc_shared
+      - soc_mgmt
     environment:
       OPENCTI_URL: http://opencti-platform:8080
-      OPENCTI_TOKEN: ${OPENCTI_TOKEN}
-      CONNECTOR_ID: ${VIRUSTOTAL_CONNECTOR_ID:-virustotal-connector}
-      CONNECTOR_NAME: VirusTotal
-      CONNECTOR_SCOPE: "StixFile,Artifact,IPv4-Addr,Domain-Name,Url,Hostname"
+      OPENCTI_TOKEN: ${OPENCTI_ADMIN_TOKEN}
+      CONNECTOR_ID: ${VIRUSTOTAL_LIVEHUNT_CONNECTOR_ID}
+      CONNECTOR_TYPE: EXTERNAL_IMPORT
+      CONNECTOR_NAME: "VirusTotal Livehunt"
+      CONNECTOR_CONFIDENCE_LEVEL: 50
+      CONNECTOR_LOG_LEVEL: info
+      VIRUSTOTAL_LIVEHUNT_NOTIFICATIONS_API_KEY: ${VIRUSTOTAL_API_KEY}
+      VIRUSTOTAL_LIVEHUNT_NOTIFICATIONS_COOLDOWN_SECONDS: 300
+      VIRUSTOTAL_LIVEHUNT_NOTIFICATIONS_MARK_AS_READ: "true"
+      VIRUSTOTAL_LIVEHUNT_NOTIFICATIONS_CREATE_ALERT: "true"
+      VIRUSTOTAL_LIVEHUNT_NOTIFICATIONS_EXTENSIONS: "exe,dll,ps1,js,vbs,doc,docx,xls,xlsx,pdf"
+      VIRUSTOTAL_LIVEHUNT_NOTIFICATIONS_MIN_POSITIVES: 5
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+# ═══════════════════════════════════════════════════════
+#  CONNECTORS — INTERNAL ENRICHMENT
+# ═══════════════════════════════════════════════════════
+
+# ─────────────────────────────────────────────────────
+#  Connector: VirusTotal (Enrichment)
+# ─────────────────────────────────────────────────────
+  connector-virustotal:
+    image: opencti/connector-virustotal:5.12.17
+    platform: linux/amd64
+    restart: unless-stopped
+    depends_on:
+      opencti-platform:
+        condition: service_healthy
+    networks:
+      - soc_shared
+      - soc_mgmt
+    environment:
+      OPENCTI_URL: http://opencti-platform:8080
+      OPENCTI_TOKEN: ${OPENCTI_ADMIN_TOKEN}
+      CONNECTOR_ID: ${VIRUSTOTAL_CONNECTOR_ID}
+      CONNECTOR_TYPE: INTERNAL_ENRICHMENT
+      CONNECTOR_NAME: "VirusTotal"
+      CONNECTOR_SCOPE: StixFile,Artifact,IPv4-Addr,IPv6-Addr,Domain-Name,Url
       CONNECTOR_AUTO: "true"
-      CONNECTOR_LOG_LEVEL: error
-      CONNECTOR_EXPOSE_METRICS: "false"
+      CONNECTOR_CONFIDENCE_LEVEL: 50
+      CONNECTOR_LOG_LEVEL: info
       VIRUSTOTAL_TOKEN: ${VIRUSTOTAL_TOKEN}
-      # VIRUSTOTAL_MAX_TLP: TLP:AMBER
-      # VIRUSTOTAL_REPLACE_WITH_LOWER_SCORE: true
-      # File/Artifact specific config
-      VIRUSTOTAL_FILE_CREATE_NOTE_FULL_REPORT: "true"
-      VIRUSTOTAL_FILE_UPLOAD_UNSEEN_ARTIFACTS: "true"
+      VIRUSTOTAL_MAX_TLP: TLP:AMBER
+      VIRUSTOTAL_REPLACE_WITH_LOWER_SCORE: "true"
+      VIRUSTOTAL_FILE_CREATE_YARA_RULE: "true"
       VIRUSTOTAL_FILE_INDICATOR_CREATE_POSITIVES: 10
       VIRUSTOTAL_FILE_INDICATOR_VALID_MINUTES: 2880
-      VIRUSTOTAL_FILE_INDICATOR_DETECT: "true"
-      VIRUSTOTAL_FILE_IMPORT_YARA: "true"
-      # IP specific config
-      VIRUSTOTAL_IP_INDICATOR_CREATE_POSITIVES: 10
-      VIRUSTOTAL_IP_INDICATOR_VALID_MINUTES: 2880
-      VIRUSTOTAL_IP_INDICATOR_DETECT: "true"
-      VIRUSTOTAL_IP_ADD_RELATIONSHIPS: "false"
-      # Domain specific config
-      VIRUSTOTAL_DOMAIN_INDICATOR_CREATE_POSITIVES: 10
-      VIRUSTOTAL_DOMAIN_INDICATOR_VALID_MINUTES: 2880
-      VIRUSTOTAL_DOMAIN_INDICATOR_DETECT: "true"
-      VIRUSTOTAL_DOMAIN_ADD_RELATIONSHIPS: "false"
-      # URL specific config
-      VIRUSTOTAL_URL_UPLOAD_UNSEEN: "true"
+      VIRUSTOTAL_URL_CREATE_POSITIVES: 10
       VIRUSTOTAL_URL_INDICATOR_CREATE_POSITIVES: 10
       VIRUSTOTAL_URL_INDICATOR_VALID_MINUTES: 2880
-      VIRUSTOTAL_URL_INDICATOR_DETECT: "true"
-      # Generic config
-      VIRUSTOTAL_INCLUDE_ATTRIBUTES_IN_NOTE: "false"
+      VIRUSTOTAL_IP_INDICATOR_CREATE_POSITIVES: 10
+      VIRUSTOTAL_IP_INDICATOR_VALID_MINUTES: 2880
+      VIRUSTOTAL_IP_ADD_RELATIONSHIPS: "true"
+      VIRUSTOTAL_DOMAIN_INDICATOR_CREATE_POSITIVES: 10
+      VIRUSTOTAL_DOMAIN_INDICATOR_VALID_MINUTES: 2880
+      VIRUSTOTAL_DOMAIN_ADD_RELATIONSHIPS: "true"
     deploy:
-      replicas: 1
+      resources:
+        limits:
+          memory: 256M
 
-# ───────────────── IPInfo Connector ─────────────────
-  connector-ipinfo:
+# ─────────────────────────────────────────────────────
+#  Connector: AbuseIPDB
+# ─────────────────────────────────────────────────────
+  connector-abuseipdb:
+    image: opencti/connector-abuseipdb:5.12.17
     platform: linux/amd64
-    image: opencti/connector-ipinfo:latest
     restart: unless-stopped
     depends_on:
       opencti-platform:
         condition: service_healthy
     networks:
       - soc_shared
+      - soc_mgmt
     environment:
       OPENCTI_URL: http://opencti-platform:8080
-      OPENCTI_TOKEN: ${OPENCTI_TOKEN}
-      CONNECTOR_ID: ${IPINFO_CONNECTOR_ID:-ipinfo-connector}
-      CONNECTOR_NAME: IpInfo
-      CONNECTOR_SCOPE: "IPv4-Addr,IPv6-Addr"
+      OPENCTI_TOKEN: ${OPENCTI_ADMIN_TOKEN}
+      CONNECTOR_ID: ${ABUSEIPDB_CONNECTOR_ID}
+      CONNECTOR_TYPE: INTERNAL_ENRICHMENT
+      CONNECTOR_NAME: "AbuseIPDB"
+      CONNECTOR_SCOPE: IPv4-Addr
+      CONNECTOR_AUTO: "true"
+      CONNECTOR_CONFIDENCE_LEVEL: 70
+      CONNECTOR_LOG_LEVEL: info
+      ABUSEIPDB_API_KEY: ${ABUSEIPDB_API_KEY}
+      ABUSEIPDB_MAX_AGE_IN_DAYS: 30
+      ABUSEIPDB_ABUSE_SCORE_THRESHOLD: ${ABUSEIPDB_SCORE:-80}
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+# ─────────────────────────────────────────────────────
+#  Connector: IPInfo
+# ─────────────────────────────────────────────────────
+  connector-ipinfo:
+    image: opencti/connector-ipinfo:5.12.17
+    platform: linux/amd64
+    restart: unless-stopped
+    depends_on:
+      opencti-platform:
+        condition: service_healthy
+    networks:
+      - soc_shared
+      - soc_mgmt
+    environment:
+      OPENCTI_URL: http://opencti-platform:8080
+      OPENCTI_TOKEN: ${OPENCTI_ADMIN_TOKEN}
+      CONNECTOR_ID: ${IPINFO_CONNECTOR_ID}
+      CONNECTOR_TYPE: INTERNAL_ENRICHMENT
+      CONNECTOR_NAME: "IPInfo"
+      CONNECTOR_SCOPE: IPv4-Addr,IPv6-Addr
       CONNECTOR_AUTO: "true"
       CONNECTOR_CONFIDENCE_LEVEL: 75
-      CONNECTOR_LOG_LEVEL: error
+      CONNECTOR_LOG_LEVEL: info
       IPINFO_TOKEN: ${IPINFO_TOKEN}
-      IPINFO_MAX_TLP: "TLP:AMBER"
-      IPINFO_USE_ASN_NAME: "true"
+      IPINFO_MAX_TLP: TLP:AMBER
+    deploy:
+      resources:
+        limits:
+          memory: 256M
 
-# ───────────────── Shodan Connector ─────────────────
+# ─────────────────────────────────────────────────────
+#  Connector: Shodan
+# ─────────────────────────────────────────────────────
   connector-shodan:
+    image: opencti/connector-shodan:5.12.17
     platform: linux/amd64
-    image: opencti/connector-shodan:latest
     restart: unless-stopped
     depends_on:
       opencti-platform:
         condition: service_healthy
     networks:
       - soc_shared
+      - soc_mgmt
     environment:
       OPENCTI_URL: http://opencti-platform:8080
-      OPENCTI_TOKEN: ${OPENCTI_TOKEN}
-      CONNECTOR_ID: ${SHODAN_CONNECTOR_ID:-82b58916-a654-4cd4-81de-700eb72a5c94}
-      CONNECTOR_NAME: Shodan
-      CONNECTOR_SCOPE: "ipv4-addr,indicator"
+      OPENCTI_TOKEN: ${OPENCTI_ADMIN_TOKEN}
+      CONNECTOR_ID: ${SHODAN_CONNECTOR_ID}
+      CONNECTOR_TYPE: INTERNAL_ENRICHMENT
+      CONNECTOR_NAME: "Shodan"
+      CONNECTOR_SCOPE: IPv4-Addr
       CONNECTOR_AUTO: "true"
-      CONNECTOR_LOG_LEVEL: error
+      CONNECTOR_CONFIDENCE_LEVEL: 75
+      CONNECTOR_LOG_LEVEL: info
       SHODAN_TOKEN: ${SHODAN_TOKEN}
-      SHODAN_MAX_TLP: "TLP:AMBER"
-      SHODAN_DEFAULT_SCORE: 50
-      SHODAN_IMPORT_SEARCH_RESULTS: "true"
-      SHODAN_CREATE_NOTE: "true"
-      SHODAN_USE_ISP_NAME_FOR_ASN: "false"
+      SHODAN_MAX_TLP: TLP:AMBER
+      SHODAN_CREATE_INDICATORS: "true"
+    deploy:
+      resources:
+        limits:
+          memory: 256M
 
-
-# ───────────────── Networks ─────────────────
+# ─────────────────────────────────────────────────────
+#  Networks
+# ─────────────────────────────────────────────────────
 networks:
   soc_shared:
     external: true
+    # Create before first run: docker network create soc_shared
 
   soc_mgmt:
     driver: bridge
-    internal: true
 
-# ───────────────── Volumes ─────────────────
+# ─────────────────────────────────────────────────────
+#  Volumes
+# ─────────────────────────────────────────────────────
 volumes:
   opencti_redis_data:
   opencti_esdata:

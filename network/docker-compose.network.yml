@@ -2,6 +2,9 @@ version: "3.9"
 
 services:
 
+  # =========================
+  #  APP (NGINX)
+  # =========================
   app:
     image: nginx:latest
     container_name: app
@@ -14,38 +17,56 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://localhost || exit 1"]
       interval: 30s
+      timeout: 5s
       retries: 5
-
-  monitoring:
-    image: prom/prometheus:latest
-    container_name: monitoring_service
-    restart: unless-stopped
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-    networks:
-      - monitoring_zone
-      - soc_shared
-    healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:9090/-/healthy || exit 1"]
-
+# =========================
+#  NETWORKS
+# =========================
 networks:
 
+  #  private zone (app backend)
+  targets_zone:
+    name: targets_zone
+    driver: bridge
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.21.10.0/24   # เปลี่ยน subnet กันชน
+
+  #  monitoring private
   monitoring_zone:
     name: monitoring_zone
     driver: bridge
     internal: true
     ipam:
       config:
-        - subnet: 172.20.20.0/24
+        - subnet: 172.21.20.0/24
+  
+  #  database private
+  storage_zone:
+    name: storage_zone
+    driver: bridge
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.21.30.0/24
 
+  # shared communication (สำคัญสุด)
   soc_shared:
     name: soc_shared
     driver: bridge
     ipam:
       config:
-        - subnet: 172.20.40.0/24
-
+        - subnet: 172.21.40.0/24
+  # management private (สำหรับบริการที่ต้องการแยกออกจากโซนอื่นๆ)
+  soc_mgmt:
+    name: soc_mgmt
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.50.0/24
+# =========================
+#  VOLUMES
+# =========================
 volumes:
   mongo_data:
