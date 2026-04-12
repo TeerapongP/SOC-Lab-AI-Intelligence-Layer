@@ -1,5 +1,10 @@
 {
     "chat.tools.terminal.autoApprove": {
-        "docker compose": true
+        "docker compose": true,
+        "/^python3 service/notification/alert_dispatcher\\.py$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/Users/thirapongpinkaew/Desktop/ME/SOC-Lab-AI-Intelligence-Layer/service/.venv/bin/python": true
     }
 }
