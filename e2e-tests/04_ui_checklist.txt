@@ -1,0 +1,21 @@
+E2E Step 4: UI checks
+
+Kafka UI
+- URL: http://localhost:8083
+- Go to Topics -> pa5220.llm_output
+- Verify produced test messages exist
+
+RabbitMQ UI
+- URL: http://localhost:15672
+- Login with user/password from opencti/.env
+- Go to Exchanges -> soc.events
+- Check bindings for alert.high, alert.medium, alert.low
+- Go to Queues and Streams -> e2e.alert.high / e2e.alert.medium / e2e.alert.low
+- In Get messages:
+  - Ack mode: Reject requeue true (if you do not want message removed)
+  - Messages: 1
+  - Click Get Message(s)
+
+Notes
+- If UI says Queue is empty, publish one more test message and refresh.
+- If you use requeue false, the fetched message is consumed and queue may become 0.

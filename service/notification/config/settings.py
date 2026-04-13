@@ -25,6 +25,12 @@ def _normalize_bootstrap(raw: str) -> str:
     return ",".join(p.replace("localhost", "127.0.0.1") for p in parts) or "127.0.0.1:9092"
 
 
+def _as_bool(value: str, default: bool = False) -> bool:
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
 # ── Kafka ──────────────────────────────────────────────────────────────────────
 KAFKA_BOOTSTRAP          = _normalize_bootstrap(os.getenv("KAFKA_BOOTSTRAP",        "127.0.0.1:9092"))
 KAFKA_LLM_OUTPUT_TOPIC   = os.getenv("KAFKA_LLM_OUTPUT_TOPIC",  "pa5220.llm_output")
@@ -53,6 +59,16 @@ INFLUX_TOKEN             = os.getenv("INFLUX_TOKEN", "")
 INFLUX_ORG               = os.getenv("INFLUX_ORG",              "soc")
 INFLUX_BUCKET            = os.getenv("INFLUX_BUCKET",           "soc_metrics")
 INFLUX_RETENTION_DAYS    = int(os.getenv("INFLUX_RETENTION_DAYS", "90"))
+
+# ── Elasticsearch direct index ───────────────────────────────────────────────
+ELASTIC_ENABLED          = _as_bool(os.getenv("ELASTIC_ENABLED", "true"), default=True)
+ELASTIC_URL              = os.getenv("ELASTIC_URL", "http://localhost:9200").rstrip("/")
+ELASTIC_INDEX            = os.getenv("ELASTIC_INDEX", "soc-alerts")
+ELASTIC_USERNAME         = os.getenv("ELASTIC_USERNAME", "")
+ELASTIC_PASSWORD         = os.getenv("ELASTIC_PASSWORD", "")
+ELASTIC_API_KEY          = os.getenv("ELASTIC_API_KEY", "")
+ELASTIC_VERIFY_TLS       = _as_bool(os.getenv("ELASTIC_VERIFY_TLS", "true"), default=True)
+ELASTIC_TIMEOUT_SEC      = float(os.getenv("ELASTIC_TIMEOUT_SEC", "5"))
 
 # ── Line Notify ───────────────────────────────────────────────────────────────
 LINE_NOTIFY_TOKEN        = os.getenv("LINE_NOTIFY_TOKEN", "")
