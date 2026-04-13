@@ -37,7 +37,11 @@ soc-env/
 # =========================
 # 4. Security & Configs
 # =========================
-# ห้ามเอาไฟล์ที่มี Password หรือ API Key ของ OpenCTI ขึ้น GitHub เด็ดขาด!
+# =========================
+# 5. OS Generated Files
+# =========================
+.DS_Store
+Thumbs.db
 .env
 *.pem
 secrets.json
