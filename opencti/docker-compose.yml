@@ -46,6 +46,8 @@ services:
       - soc_mgmt
     volumes:
       - opencti_esdata:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
     environment:
       discovery.type: single-node
       xpack.security.enabled: "false"

@@ -1,0 +1,18 @@
+Optional cleanup
+
+cd /Users/thirapongpinkaew/Desktop/ME/SOC-Lab-AI-Intelligence-Layer
+
+# Stop dispatcher if running in foreground: Ctrl+C
+
+# Remove E2E queues
+RABBIT_PASS=$(grep '^RABBITMQ_DEFAULT_PASS=' opencti/.env | cut -d= -f2-)
+
+docker exec opencti-opencti-rabbitmq-1 rabbitmqadmin -u thirapongp -p "$RABBIT_PASS" delete queue name=e2e.alert.high
+
+docker exec opencti-opencti-rabbitmq-1 rabbitmqadmin -u thirapongp -p "$RABBIT_PASS" delete queue name=e2e.alert.medium
+
+docker exec opencti-opencti-rabbitmq-1 rabbitmqadmin -u thirapongp -p "$RABBIT_PASS" delete queue name=e2e.alert.low
+
+# Stop infrastructure if needed
+docker compose -f kafana/docker-compose.yml down
+docker compose -f opencti/docker-compose.yml stop opencti-rabbitmq

@@ -15,6 +15,7 @@ if str(_SERVICE_ROOT) not in sys.path:
 
 from notification.config import settings
 from notification.eventbus.publisher import EventBus
+from notification.metrics.elasticsearch import ElasticsearchWriter
 from notification.metrics.influx import MetricsWriter
 from notification.models.alert import LLMAlert, Priority
 from notification.notifiers.line.notifier import LineNotifier
@@ -48,15 +49,16 @@ class AlertDispatcher:
     """
     Consumes LLM JSON output from pa5220.llm_output and routes by priority:
 
-      HIGH   → Line Notify (immediate) + RabbitMQ + InfluxDB
-      MEDIUM → Outlook email (immediate) + RabbitMQ + InfluxDB
-      LOW    → Outlook digest buffer + RabbitMQ + InfluxDB
+            HIGH   → Line Notify (immediate) + RabbitMQ + InfluxDB + Elasticsearch
+            MEDIUM → Outlook email (immediate) + RabbitMQ + InfluxDB + Elasticsearch
+            LOW    → Outlook digest buffer + RabbitMQ + InfluxDB + Elasticsearch
     """
 
     def __init__(self) -> None:
         self._consumer  = _make_consumer()
         self._eventbus  = EventBus()
         self._metrics   = MetricsWriter()
+        self._elastic   = ElasticsearchWriter()
         self._line      = LineNotifier()
         self._outlook   = OutlookNotifier()
         self._running   = True
@@ -100,8 +102,9 @@ class AlertDispatcher:
     # ── Routing logic ─────────────────────────────────────────────────────────
 
     def _dispatch(self, alert: LLMAlert) -> None:
-        # Always write to InfluxDB and publish to event bus
+        # Always write to metrics + event bus + Elasticsearch index
         self._metrics.write_alert(alert)
+        self._elastic.write_alert(alert)
         self._eventbus.publish_alert(alert)
 
         if alert.priority == Priority.HIGH:
@@ -138,6 +141,7 @@ class AlertDispatcher:
         log.info("Flushing and closing connections...")
         self._eventbus.close()
         self._metrics.close()
+        self._elastic.close()
         self._consumer.close()
         log.info("Dispatcher stopped.")
 

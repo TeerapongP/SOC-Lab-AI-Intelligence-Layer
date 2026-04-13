@@ -1,0 +1,14 @@
+E2E Step 2: Start dispatcher
+
+# Go to project root
+cd /Users/thirapongpinkaew/Desktop/ME/SOC-Lab-AI-Intelligence-Layer
+
+# Activate Python venv
+source service/.venv/bin/activate
+
+# Start dispatcher (foreground)
+python service/notification/dispatcher/alert_dispatcher.py
+
+# Optional: Start dispatcher in background and write log
+# nohup python service/notification/dispatcher/alert_dispatcher.py > /tmp/dispatcher.log 2>&1 &
+# tail -f /tmp/dispatcher.log

@@ -1,0 +1,56 @@
+E2E Step 3: Publish test alerts and verify routing
+
+# Go to project root
+cd /Users/thirapongpinkaew/Desktop/ME/SOC-Lab-AI-Intelligence-Layer
+
+# Create E2E queues and bindings
+RABBIT_PASS=$(grep '^RABBITMQ_DEFAULT_PASS=' opencti/.env | cut -d= -f2-)
+
+docker exec opencti-opencti-rabbitmq-1 rabbitmqadmin -u thirapongp -p "$RABBIT_PASS" \
+  declare queue name=e2e.alert.high durable=false
+
+docker exec opencti-opencti-rabbitmq-1 rabbitmqadmin -u thirapongp -p "$RABBIT_PASS" \
+  declare queue name=e2e.alert.medium durable=false
+
+docker exec opencti-opencti-rabbitmq-1 rabbitmqadmin -u thirapongp -p "$RABBIT_PASS" \
+  declare queue name=e2e.alert.low durable=false
+
+docker exec opencti-opencti-rabbitmq-1 rabbitmqadmin -u thirapongp -p "$RABBIT_PASS" \
+  declare binding source=soc.events destination_type=queue destination=e2e.alert.high routing_key=alert.high
+
+docker exec opencti-opencti-rabbitmq-1 rabbitmqadmin -u thirapongp -p "$RABBIT_PASS" \
+  declare binding source=soc.events destination_type=queue destination=e2e.alert.medium routing_key=alert.medium
+
+docker exec opencti-opencti-rabbitmq-1 rabbitmqadmin -u thirapongp -p "$RABBIT_PASS" \
+  declare binding source=soc.events destination_type=queue destination=e2e.alert.low routing_key=alert.low
+
+# Publish HIGH test alert to Kafka
+printf '%s\n' '{"risk_score":85,"anomaly_type":"C2","top_3_features":["ioc_confidence","beaconing_interval","actor_known"],"source_ip":"10.10.10.10","dst_port":443,"model_used":"ensemble","ensemble_confidence":0.93,"timestamp":"2026-04-13T00:20:00Z","priority":"HIGH","explanation_th":"E2E HIGH test","mitre_tactic":"command-and-control","affected_asset":"host-01","remediation":["block ip","isolate endpoint"],"faithfulness_score":0.90,"hallucination_rate":0.02,"response_ms":1200}' \
+| docker exec -i kafana-kafka-broker-1 kafka-console-producer --bootstrap-server localhost:9092 --topic pa5220.llm_output
+
+# Publish MEDIUM and LOW
+printf '%s\n%s\n' \
+'{"risk_score":55,"anomaly_type":"BruteForce","top_3_features":["failed_auth_ratio"],"source_ip":"10.10.10.20","dst_port":22,"model_used":"rf","ensemble_confidence":0.72,"timestamp":"2026-04-13T00:21:00Z","priority":"MEDIUM","explanation_th":"E2E MEDIUM test","mitre_tactic":"credential-access","affected_asset":"ssh-server","remediation":["block ip"],"faithfulness_score":0.88,"hallucination_rate":0.04,"response_ms":1400}' \
+'{"risk_score":20,"anomaly_type":"Recon","top_3_features":["login_velocity"],"source_ip":"10.10.10.30","dst_port":8080,"model_used":"iso","ensemble_confidence":0.35,"timestamp":"2026-04-13T00:22:00Z","priority":"LOW","explanation_th":"E2E LOW test","mitre_tactic":"reconnaissance","affected_asset":"web-01","remediation":["monitor"],"faithfulness_score":0.80,"hallucination_rate":0.05,"response_ms":1500}' \
+| docker exec -i kafana-kafka-broker-1 kafka-console-producer --bootstrap-server localhost:9092 --topic pa5220.llm_output
+
+# Verify Kafka consumer group
+
+docker exec kafana-kafka-broker-1 kafka-consumer-groups \
+  --bootstrap-server localhost:9092 \
+  --describe --group dispatcher-group
+
+# Verify RabbitMQ queues
+
+docker exec opencti-opencti-rabbitmq-1 rabbitmqctl list_queues name messages_ready messages_unacknowledged | egrep 'e2e.alert.high|e2e.alert.medium|e2e.alert.low'
+
+# Peek messages from queues (requeue true)
+
+docker exec opencti-opencti-rabbitmq-1 rabbitmqadmin -f pretty_json -u thirapongp -p "$RABBIT_PASS" \
+  get queue=e2e.alert.high count=1 ackmode=ack_requeue_true
+
+docker exec opencti-opencti-rabbitmq-1 rabbitmqadmin -f pretty_json -u thirapongp -p "$RABBIT_PASS" \
+  get queue=e2e.alert.medium count=1 ackmode=ack_requeue_true
+
+docker exec opencti-opencti-rabbitmq-1 rabbitmqadmin -f pretty_json -u thirapongp -p "$RABBIT_PASS" \
+  get queue=e2e.alert.low count=1 ackmode=ack_requeue_true
