@@ -1,0 +1,92 @@
+services:
+  shuffle-opensearch:
+    image: opensearchproject/opensearch:2.14.0
+    restart: unless-stopped
+    networks:
+      - soc_shared
+    environment:
+      discovery.type: single-node
+      OPENSEARCH_JAVA_OPTS: "-Xms1g -Xmx1g"
+      DISABLE_INSTALL_DEMO_CONFIG: "true"
+      DISABLE_SECURITY_PLUGIN: "true"
+    volumes:
+      - shuffle-opensearch:/usr/share/opensearch/data
+    deploy:
+      resources:
+        limits:
+          memory: 2g
+        reservations:
+          memory: 1g
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health | grep -q 'yellow\\|green'"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  shuffle-backend:
+    image: ghcr.io/shuffle/shuffle-backend:latest
+    restart: unless-stopped
+    depends_on:
+      shuffle-opensearch:
+        condition: service_healthy
+    networks:
+      - soc_shared
+    ports:
+      - "5001:5001"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - shuffle-apps:/shuffle-apps
+      - shuffle-files:/shuffle-files
+    environment:
+      DATASTORE_EMULATOR_HOST: shuffle-opensearch:9200
+      OPENSEARCH_URL: http://shuffle-opensearch:9200
+      SHUFFLE_OPENSEARCH_URL: http://shuffle-opensearch:9200
+      SHUFFLE_DEFAULT_USERNAME: ${SHUFFLE_USERNAME:-admin}
+      SHUFFLE_DEFAULT_PASSWORD: ${SHUFFLE_PASSWORD:-admin}
+      SHUFFLE_DEFAULT_APIKEY: ${SHUFFLE_APIKEY:-}
+      BASE_URL: http://shuffle-backend:5001
+      SHUFFLE_ORBORUS_EXECUTION_TIMEOUT: "600"
+      SHUFFLE_LOGS_DISABLED: "false"
+
+  shuffle-frontend:
+    image: ghcr.io/shuffle/shuffle-frontend:latest
+    restart: unless-stopped
+    depends_on:
+      - shuffle-backend
+    networks:
+      - soc_shared
+    ports:
+      - "3001:80"
+    environment:
+      BACKEND_HOSTNAME: shuffle-backend
+      BACKEND_PORT: "5001"
+
+  shuffle-orborus:
+    image: ghcr.io/shuffle/shuffle-orborus:latest
+    restart: unless-stopped
+    depends_on:
+      - shuffle-backend
+    networks:
+      - soc_shared
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      SHUFFLE_APP_HOTLOAD_FOLDER: ./shuffle-apps
+      ENVIRONMENT_NAME: Shuffle
+      BASE_URL: http://shuffle-backend:5001
+      DOCKER_API_VERSION: "1.40"
+      SHUFFLE_BASE_IMAGE_NAME: shuffle-worker
+      CLEANUP: "true"
+
+volumes:
+  shuffle-opensearch:
+    driver: local
+  shuffle-apps:
+    driver: local
+  shuffle-files:
+    driver: local
+
+networks:
+  soc_shared:
+    external: true
