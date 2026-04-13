@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from dataclasses import asdict
 from datetime import datetime, timezone
 
-import requests
+from elasticsearch import Elasticsearch, ElasticsearchException
 
 from notification.config import settings
 from notification.models.alert import LLMAlert
@@ -14,63 +13,47 @@ log = get_logger("dashboard.metrics.elasticsearch")
 
 class ElasticsearchWriter:
     """
-    Writes alerts directly into Elasticsearch using the REST API.
+    Indexes alert documents into Elasticsearch (reuse opencti-elasticsearch).
 
-    Index target:
-      {ELASTIC_URL}/{ELASTIC_INDEX}/_doc
+    Index:    soc-alerts (settings.ELASTIC_ALERT_INDEX)
+    Doc id:   alert.alert_id  — idempotent re-index on replay
+    Mapping:  dynamic (no explicit mapping needed for thesis scope)
     """
 
     def __init__(self) -> None:
-        self._enabled = settings.ELASTIC_ENABLED
-        self._url = f"{settings.ELASTIC_URL}/{settings.ELASTIC_INDEX}/_doc"
-        self._session = requests.Session()
-
-        self._headers = {"Content-Type": "application/json"}
-        if settings.ELASTIC_API_KEY:
-            self._headers["Authorization"] = f"ApiKey {settings.ELASTIC_API_KEY}"
-
-        self._auth = None
-        if settings.ELASTIC_USERNAME and settings.ELASTIC_PASSWORD:
-            self._auth = (settings.ELASTIC_USERNAME, settings.ELASTIC_PASSWORD)
-
-        if self._enabled:
-            log.info(
-                "Elasticsearch writer enabled (url=%s index=%s)",
-                settings.ELASTIC_URL,
-                settings.ELASTIC_INDEX,
-            )
-        else:
-            log.info("Elasticsearch writer disabled (ELASTIC_ENABLED=false)")
+        try:
+            kwargs: dict = {"hosts": [settings.ELASTIC_URL]}
+            if settings.ELASTIC_API_KEY:
+                kwargs["api_key"] = settings.ELASTIC_API_KEY
+            self._es = Elasticsearch(**kwargs)
+            log.info("Elasticsearch connected — index=%s", settings.ELASTIC_ALERT_INDEX)
+        except Exception as exc:
+            log.error("Elasticsearch init failed: %s", exc, exc_info=True)
+            self._es = None
 
     def write_alert(self, alert: LLMAlert) -> None:
-        if not self._enabled:
+        if self._es is None:
+            log.warning("Elasticsearch not connected — skipping index for %s", alert.alert_id)
             return
 
-        doc = asdict(alert)
-        doc["priority"] = alert.priority.value
+        doc = alert.to_dict()
+        # Add ingested_at for Kibana time filter
         doc["ingested_at"] = datetime.now(tz=timezone.utc).isoformat()
 
-        if not doc.get("timestamp"):
-            doc["timestamp"] = doc["ingested_at"]
-
         try:
-            resp = self._session.post(
-                self._url,
-                json=doc,
-                headers=self._headers,
-                auth=self._auth,
-                verify=settings.ELASTIC_VERIFY_TLS,
-                timeout=settings.ELASTIC_TIMEOUT_SEC,
+            self._es.index(
+                index      = settings.ELASTIC_ALERT_INDEX,
+                id         = alert.alert_id,   # idempotent
+                document   = doc,
             )
-            if resp.status_code in (200, 201):
-                return
-            log.warning(
-                "Elasticsearch index failed: HTTP %d - %s",
-                resp.status_code,
-                resp.text[:200],
-            )
-        except requests.RequestException as exc:
-            log.warning("Elasticsearch write error: %s", exc)
+            log.debug("Elasticsearch indexed — alert_id=%s", alert.alert_id)
+        except ElasticsearchException as exc:
+            log.error("Elasticsearch index failed for %s: %s", alert.alert_id, exc, exc_info=True)
 
     def close(self) -> None:
-        self._session.close()
+        try:
+            if self._es:
+                self._es.close()
+                log.info("Elasticsearch connection closed")
+        except Exception as exc:
+            log.warning("Elasticsearch close error: %s", exc)

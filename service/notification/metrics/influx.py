@@ -1,90 +1,79 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from influxdb_client import InfluxDBClient, WriteOptions
+from influxdb_client.client.write_api import SYNCHRONOUS
+from influxdb_client.domain.write_precision import WritePrecision
 
 from notification.config import settings
 from notification.models.alert import LLMAlert
 from notification.logging_utils import get_logger
 
-log = get_logger("dashboard.metrics")
+log = get_logger("dashboard.metrics.influx")
 
 
 class MetricsWriter:
     """
-    Writes pipeline metrics to InfluxDB.
+    Writes alert metrics to InfluxDB.
 
-    Measurements:
-      soc_alert       — per-alert metrics (risk_score, response_ms, etc.)
-      soc_pipeline    — layer-level counters (ingest_rate, enrich_latency, etc.)
+    Measurement: soc_alert
+    Tags:        priority, anomaly_type, mitre_tactic, model_used
+    Fields:      risk_score, mttd_s, faithfulness_score, response_ms,
+                 ioc_confidence, actor_known
     """
 
     def __init__(self) -> None:
-        self._client     = None
-        self._write_api  = None
-        self._connect()
-
-    def _connect(self) -> None:
         try:
-            from influxdb_client import InfluxDBClient, WriteOptions
-            from influxdb_client.client.write_api import SYNCHRONOUS
-
-            self._client    = InfluxDBClient(
-                url=settings.INFLUX_URL,
-                token=settings.INFLUX_TOKEN,
-                org=settings.INFLUX_ORG,
+            self._client = InfluxDBClient(
+                url   = settings.INFLUX_URL,
+                token = settings.INFLUX_TOKEN,
+                org   = settings.INFLUX_ORG,
             )
-            self._write_api = self._client.write_api(write_options=SYNCHRONOUS)
-            log.info("Connected to InfluxDB at %s", settings.INFLUX_URL)
-        except ImportError:
-            log.warning("influxdb-client not installed — metrics disabled")
+            self._write = self._client.write_api(write_options=SYNCHRONOUS)
+            log.info("InfluxDB connected — bucket=%s", settings.INFLUX_BUCKET)
         except Exception as exc:
-            log.error("InfluxDB connection failed: %s", exc)
+            log.error("InfluxDB init failed: %s", exc, exc_info=True)
+            self._client = None
+            self._write  = None
 
     def write_alert(self, alert: LLMAlert) -> None:
-        if not self._write_api:
+        if self._write is None:
+            log.warning("InfluxDB not connected — skipping metric for %s", alert.alert_id)
             return
-        try:
-            from influxdb_client import Point
-            point = (
-                Point("soc_alert")
-                .tag("priority",     alert.priority.value)
-                .tag("model_used",   alert.model_used)
-                .tag("mitre_tactic", alert.mitre_tactic)
-                .field("risk_score",          alert.risk_score)
-                .field("ensemble_confidence", alert.ensemble_confidence)
-                .field("faithfulness_score",  alert.faithfulness_score)
-                .field("hallucination_rate",  alert.hallucination_rate)
-                .field("response_ms",         alert.response_ms)
-                .time(datetime.now(tz=timezone.utc))
-            )
-            self._write_api.write(
-                bucket=settings.INFLUX_BUCKET,
-                org=settings.INFLUX_ORG,
-                record=point,
-            )
-        except Exception as exc:
-            log.warning("InfluxDB write failed: %s", exc)
 
-    def write_layer_metric(self, layer: str, measurement: str, fields: dict, tags: dict | None = None) -> None:
-        """Generic method for writing layer-level pipeline metrics."""
-        if not self._write_api:
-            return
+        point = {
+            "measurement": "soc_alert",
+            "tags": {
+                "priority":     alert.priority.value,
+                "anomaly_type": alert.anomaly_type,
+                "mitre_tactic": alert.mitre_tactic,
+                "model_used":   alert.model_used,
+            },
+            "fields": {
+                "risk_score":         alert.risk_score,
+                "faithfulness_score": alert.faithfulness_score,
+                "response_ms":        alert.response_ms,
+                "ioc_confidence":     alert.ioc_confidence,
+                "actor_known":        int(alert.actor_known),
+                "mttd_s":             alert.mttd_s if alert.mttd_s is not None else 0.0,
+            },
+            "time": alert.timestamp,
+        }
+
         try:
-            from influxdb_client import Point
-            point = Point(measurement).tag("layer", layer)
-            for k, v in (tags or {}).items():
-                point = point.tag(k, v)
-            for k, v in fields.items():
-                point = point.field(k, v)
-            point = point.time(datetime.now(tz=timezone.utc))
-            self._write_api.write(
-                bucket=settings.INFLUX_BUCKET,
-                org=settings.INFLUX_ORG,
-                record=point,
+            self._write.write(
+                bucket    = settings.INFLUX_BUCKET,
+                org       = settings.INFLUX_ORG,
+                record    = point,
+                precision = WritePrecision.SECONDS,
             )
+            log.debug("InfluxDB written — alert_id=%s", alert.alert_id)
         except Exception as exc:
-            log.warning("InfluxDB layer metric write failed: %s", exc)
+            log.error("InfluxDB write failed for %s: %s", alert.alert_id, exc, exc_info=True)
 
     def close(self) -> None:
-        if self._client:
-            self._client.close()
+        try:
+            if self._client:
+                self._client.close()
+                log.info("InfluxDB connection closed")
+        except Exception as exc:
+            log.warning("InfluxDB close error: %s", exc)

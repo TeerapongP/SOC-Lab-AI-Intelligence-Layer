@@ -3,9 +3,10 @@ from __future__ import annotations
 import json
 
 import pika
+import pika.exceptions
 
 from notification.config import settings
-from notification.models.alert import LLMAlert, Priority
+from notification.models.alert import LLMAlert
 from notification.logging_utils import get_logger
 
 log = get_logger("dashboard.eventbus")
@@ -13,79 +14,59 @@ log = get_logger("dashboard.eventbus")
 
 class EventBus:
     """
-    Publishes alert events to RabbitMQ with topic routing.
-
-    Exchange: soc.events (topic)
-    Routing keys:
-      HIGH   → alert.high
-      MEDIUM → alert.medium
-      LOW    → alert.low
-      metrics → metrics.layer
+    Publishes alert events to RabbitMQ (reuse opencti-rabbitmq).
+    Topic routing key: alert.<priority>   e.g. alert.HIGH
     """
 
     def __init__(self) -> None:
-        self._connection = None
-        self._channel    = None
+        self._conn:    pika.BlockingConnection | None = None
+        self._channel: pika.channel.Channel | None   = None
         self._connect()
 
     def _connect(self) -> None:
-        params = pika.URLParameters(settings.RABBITMQ_URL)
-        self._connection = pika.BlockingConnection(params)
-        self._channel    = self._connection.channel()
-        self._channel.exchange_declare(
-            exchange=settings.RABBITMQ_EXCHANGE,
-            exchange_type="topic",
-            durable=True,
-        )
-        log.info("Connected to RabbitMQ exchange=%s", settings.RABBITMQ_EXCHANGE)
+        try:
+            params = pika.URLParameters(settings.RABBITMQ_URL)
+            self._conn    = pika.BlockingConnection(params)
+            self._channel = self._conn.channel()
+            self._channel.exchange_declare(
+                exchange      = settings.RABBITMQ_EXCHANGE,
+                exchange_type = "topic",
+                durable       = True,
+            )
+            log.info("EventBus connected — exchange=%s", settings.RABBITMQ_EXCHANGE)
+        except pika.exceptions.AMQPConnectionError as exc:
+            log.error("RabbitMQ connection failed: %s", exc, exc_info=True)
+            self._conn    = None
+            self._channel = None
 
     def publish_alert(self, alert: LLMAlert) -> None:
-        routing_key = self._routing_key(alert.priority)
-        body = json.dumps({
-            "priority":       alert.priority.value,
-            "risk_score":     alert.risk_score,
-            "source_ip":      alert.source_ip,
-            "dst_port":       alert.dst_port,
-            "mitre_tactic":   alert.mitre_tactic,
-            "anomaly_type":   alert.anomaly_type,
-            "affected_asset": alert.affected_asset,
-            "explanation_th": alert.explanation_th,
-            "remediation":    alert.remediation,
-            "timestamp":      alert.timestamp,
-            "model_used":     alert.model_used,
-        }).encode()
+        if self._channel is None:
+            log.warning("EventBus not connected — skipping publish for %s", alert.alert_id)
+            return
 
-        self._channel.basic_publish(
-            exchange=settings.RABBITMQ_EXCHANGE,
-            routing_key=routing_key,
-            body=body,
-            properties=pika.BasicProperties(
-                delivery_mode=2,   # persistent
-                content_type="application/json",
-            ),
-        )
-        log.debug("Published alert routing_key=%s risk=%d", routing_key, alert.risk_score)
+        routing_key = f"alert.{alert.priority.value}"
+        body        = json.dumps(alert.to_dict()).encode()
 
-    def publish_metrics(self, layer: str, metrics: dict) -> None:
-        body = json.dumps({"layer": layer, **metrics}).encode()
-        self._channel.basic_publish(
-            exchange=settings.RABBITMQ_EXCHANGE,
-            routing_key=settings.RABBITMQ_METRICS_ROUTING,
-            body=body,
-            properties=pika.BasicProperties(
-                delivery_mode=2,
-                content_type="application/json",
-            ),
-        )
+        try:
+            self._channel.basic_publish(
+                exchange     = settings.RABBITMQ_EXCHANGE,
+                routing_key  = routing_key,
+                body         = body,
+                properties   = pika.BasicProperties(
+                    delivery_mode = 2,          # persistent
+                    content_type  = "application/json",
+                ),
+            )
+            log.debug("Published %s → %s", alert.alert_id, routing_key)
+        except pika.exceptions.AMQPError as exc:
+            log.error("Publish failed for %s: %s", alert.alert_id, exc, exc_info=True)
+            # attempt reconnect for next message
+            self._connect()
 
     def close(self) -> None:
-        if self._connection and not self._connection.is_closed:
-            self._connection.close()
-
-    @staticmethod
-    def _routing_key(priority: Priority) -> str:
-        return {
-            Priority.HIGH:   settings.RABBITMQ_HIGH_ROUTING,
-            Priority.MEDIUM: settings.RABBITMQ_MEDIUM_ROUTING,
-            Priority.LOW:    settings.RABBITMQ_LOW_ROUTING,
-        }[priority]
+        try:
+            if self._conn and self._conn.is_open:
+                self._conn.close()
+                log.info("EventBus connection closed")
+        except Exception as exc:
+            log.warning("EventBus close error: %s", exc)
