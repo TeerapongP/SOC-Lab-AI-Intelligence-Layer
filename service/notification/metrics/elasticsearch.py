@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from elasticsearch import Elasticsearch, ElasticsearchException
+from elasticsearch import Elasticsearch
 
 from notification.config import settings
 from notification.models.alert import LLMAlert
@@ -47,7 +47,7 @@ class ElasticsearchWriter:
                 document   = doc,
             )
             log.debug("Elasticsearch indexed — alert_id=%s", alert.alert_id)
-        except ElasticsearchException as exc:
+        except Exception as exc:
             log.error("Elasticsearch index failed for %s: %s", alert.alert_id, exc, exc_info=True)
 
     def close(self) -> None:

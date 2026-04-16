@@ -11,7 +11,14 @@ def _list(key: str, default: str = "") -> List[str]:
     if not raw:
         return []
     if raw.startswith("["):
-        return json.loads(raw)
+        try:
+            parsed = json.loads(raw)
+            if isinstance(parsed, list):
+                return [str(x).strip() for x in parsed if str(x).strip()]
+        except json.JSONDecodeError:
+            # Fall back to tolerant parsing when JSON is malformed.
+            cleaned = raw.strip("[]")
+            return [x.strip().strip('"').strip("'") for x in cleaned.split(",") if x.strip()]
     return [x.strip() for x in raw.split(",") if x.strip()]
 
 

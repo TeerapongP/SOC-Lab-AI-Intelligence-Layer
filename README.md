@@ -6,7 +6,7 @@ This repository contains a SOC-focused intelligence pipeline that enriches Palo 
 
 - `service/`: Main Python enrichment and feature extraction services.
 - `opencti/`: OpenCTI stack (platform, worker, connectors) via Docker Compose.
-- `kafana/`: Kafka broker and Kafka UI stack via Docker Compose.
+- `grafana/`: Kafka broker and Kafka UI stack via Docker Compose.
 - `network/`: Shared and segmented Docker networks.
 - `diagrams/`: Architecture and dataflow diagrams for thesis/project design.
 - `UWF-ZeekData24_clean.ipynb`: Dataset cleaning notebook for UWF Zeek data.
@@ -141,7 +141,7 @@ Also includes an `app` (nginx) service for sample/utility exposure.
 
 File:
 
-- `kafana/docker-compose.yml`
+- `grafana/docker-compose.yml`
 
 Includes:
 
@@ -182,7 +182,7 @@ docker compose -f network/docker-compose.network.yml up -d
 ### 2) Start Kafka stack
 
 ```bash
-docker compose -f kafana/docker-compose.yml up -d
+docker compose -f grafana/docker-compose.yml up -d
 ```
 
 ### 3) Prepare OpenCTI environment

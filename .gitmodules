@@ -1,0 +1,3 @@
+[submodule "service/notification/scripts/Burpsuite-Professional"]
+	path = service/notification/scripts/Burpsuite-Professional
+	url = https://github.com/xiv3r/Burpsuite-Professional.git

@@ -20,6 +20,7 @@ from notification.eventbus.publisher import EventBus
 from notification.metrics.elasticsearch import ElasticsearchWriter
 from notification.metrics.influx import MetricsWriter
 from notification.models.alert import LLMAlert, Priority
+from notification.notifiers.line.notifier import LineNotifier
 from notification.shuffle.webhook import ShuffleWebhook
 from notification.logging_utils import get_logger, setup_logging
 
@@ -50,14 +51,13 @@ def _make_consumer() -> KafkaConsumer:
 class AlertDispatcher:
     """
     Consumes LLM JSON output from pa5220.llm_output and routes by priority
-    to Shuffle SOAR via Webhook — Shuffle handles Line Broadcast + Outlook.
+    to direct LINE broadcast (HIGH) and Shuffle SOAR (MEDIUM/LOW + digest).
 
-        HIGH   → Shuffle webhook (high)   → Line Broadcast (immediate)
+        HIGH   → LINE Messaging API broadcast (immediate)
         MEDIUM → Shuffle webhook (medium) → Outlook email (immediate)
         LOW    → Shuffle webhook (low)    → Outlook daily digest buffer
 
-    Webhook URLs per-priority configured in settings:
-        SHUFFLE_WEBHOOK_HIGH
+    Shuffle URLs configured in settings:
         SHUFFLE_WEBHOOK_MEDIUM
         SHUFFLE_WEBHOOK_LOW
         SHUFFLE_WEBHOOK_DIGEST
@@ -68,6 +68,7 @@ class AlertDispatcher:
         self._eventbus = EventBus()
         self._metrics  = MetricsWriter()
         self._elastic  = ElasticsearchWriter()
+        self._line     = LineNotifier()
         self._shuffle  = ShuffleWebhook()
         self._running  = True
 
@@ -81,7 +82,7 @@ class AlertDispatcher:
         signal.signal(signal.SIGTERM, self._handle_shutdown)
 
     def run(self) -> None:
-        log.info("Dispatcher started (topic=%s → Shuffle SOAR)", settings.KAFKA_LLM_OUTPUT_TOPIC)
+        log.info("Dispatcher started (topic=%s)", settings.KAFKA_LLM_OUTPUT_TOPIC)
 
         while self._running:
             records = self._consumer.poll(timeout_ms=_KAFKA_POLL_TIMEOUT_MS)
@@ -128,7 +129,10 @@ class AlertDispatcher:
         if hasattr(alert, "mttd_s") and alert.mttd_s is not None:
             self._mttd_samples.append(float(alert.mttd_s))
 
-        self._shuffle.send(alert)
+        if alert.priority == Priority.HIGH:
+            self._line.send(alert)
+        else:
+            self._shuffle.send(alert)
 
     def _check_daily_digest(self) -> None:
         now = datetime.now(tz=timezone.utc)

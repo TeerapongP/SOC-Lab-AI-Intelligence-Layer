@@ -12,7 +12,7 @@
       "gridPos": { "x": 0, "y": 0, "w": 12, "h": 6 },
       "targets": [{
         "refId": "A",
-        "query": "from(bucket: \"soc_metrics\") |> range(start: -1h) |> filter(fn: (r) => r._measurement == \"soc_pipeline\" and r.layer == \"L1\" and r._field == \"ingest_rate\")"
+        "query": "from(bucket: \"alerts\") |> range(start: -1h) |> filter(fn: (r) => r._measurement == \"soc_pipeline\" and r.layer == \"L1\" and r._field == \"ingest_rate\")"
       }]
     },
     {
@@ -23,11 +23,11 @@
       "targets": [
         {
           "refId": "A",
-          "query": "from(bucket: \"soc_metrics\") |> range(start: -1h) |> filter(fn: (r) => r._measurement == \"soc_pipeline\" and r.layer == \"L2\" and r._field == \"enrich_latency_ms\")"
+          "query": "from(bucket: \"alerts\") |> range(start: -1h) |> filter(fn: (r) => r._measurement == \"soc_pipeline\" and r.layer == \"L2\" and r._field == \"enrich_latency_ms\")"
         },
         {
           "refId": "B",
-          "query": "from(bucket: \"soc_metrics\") |> range(start: -1h) |> filter(fn: (r) => r._measurement == \"soc_pipeline\" and r.layer == \"L2\" and r._field == \"ioc_match_rate\")"
+          "query": "from(bucket: \"alerts\") |> range(start: -1h) |> filter(fn: (r) => r._measurement == \"soc_pipeline\" and r.layer == \"L2\" and r._field == \"ioc_match_rate\")"
         }
       ]
     },
@@ -38,7 +38,7 @@
       "gridPos": { "x": 0, "y": 6, "w": 12, "h": 6 },
       "targets": [{
         "refId": "A",
-        "query": "from(bucket: \"soc_metrics\") |> range(start: -1h) |> filter(fn: (r) => r._measurement == \"soc_alert\" and r._field == \"risk_score\")"
+        "query": "from(bucket: \"alerts\") |> range(start: -1h) |> filter(fn: (r) => r._measurement == \"soc_alert\" and r._field == \"risk_score\")"
       }]
     },
     {
@@ -48,7 +48,7 @@
       "gridPos": { "x": 12, "y": 6, "w": 12, "h": 6 },
       "targets": [{
         "refId": "A",
-        "query": "from(bucket: \"soc_metrics\") |> range(start: -24h) |> filter(fn: (r) => r._measurement == \"soc_alert\" and r._field == \"mttd_s\")"
+        "query": "from(bucket: \"alerts\") |> range(start: -24h) |> filter(fn: (r) => r._measurement == \"soc_alert\" and r._field == \"mttd_s\")"
       }]
     },
     {
@@ -58,7 +58,7 @@
       "gridPos": { "x": 0, "y": 12, "w": 6, "h": 4 },
       "targets": [{
         "refId": "A",
-        "query": "from(bucket: \"soc_metrics\") |> range(start: -5m) |> filter(fn: (r) => r._measurement == \"soc_alert\" and r._field == \"response_ms\") |> mean()"
+        "query": "from(bucket: \"alerts\") |> range(start: -5m) |> filter(fn: (r) => r._measurement == \"soc_alert\" and r._field == \"response_ms\") |> mean()"
       }],
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "minVizValue": 0, "maxVizValue": 5000 }
     },
@@ -69,7 +69,7 @@
       "gridPos": { "x": 6, "y": 12, "w": 6, "h": 4 },
       "targets": [{
         "refId": "A",
-        "query": "from(bucket: \"soc_metrics\") |> range(start: -5m) |> filter(fn: (r) => r._measurement == \"soc_alert\" and r._field == \"faithfulness_score\") |> mean()"
+        "query": "from(bucket: \"alerts\") |> range(start: -5m) |> filter(fn: (r) => r._measurement == \"soc_alert\" and r._field == \"faithfulness_score\") |> mean()"
       }],
       "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "minVizValue": 0, "maxVizValue": 1 }
     },
@@ -80,7 +80,7 @@
       "gridPos": { "x": 12, "y": 12, "w": 12, "h": 4 },
       "targets": [{
         "refId": "A",
-        "query": "from(bucket: \"soc_metrics\") |> range(start: -24h) |> filter(fn: (r) => r._measurement == \"soc_alert\" and r._field == \"risk_score\") |> group(columns: [\"priority\"]) |> count()"
+        "query": "from(bucket: \"alerts\") |> range(start: -24h) |> filter(fn: (r) => r._measurement == \"soc_alert\" and r._field == \"risk_score\") |> group(columns: [\"priority\"]) |> count()"
       }]
     }
   ]

@@ -13,9 +13,8 @@ log = get_logger("notification.shuffle.webhook")
 
 _TIMEOUT_S = 10
 
-# Webhook URL map — set ใน .env ทีละ workflow ใน Shuffle
+# Webhook URL map — MEDIUM/LOW routed via Shuffle
 _WEBHOOK_MAP = {
-    Priority.HIGH:   lambda: settings.SHUFFLE_WEBHOOK_HIGH,
     Priority.MEDIUM: lambda: settings.SHUFFLE_WEBHOOK_MEDIUM,
     Priority.LOW:    lambda: settings.SHUFFLE_WEBHOOK_LOW,
 }
@@ -25,16 +24,19 @@ class ShuffleWebhook:
     """
     Sends alert payloads to Shuffle SOAR via HTTP Webhook trigger.
 
-    Priority routing:
-      HIGH   → SHUFFLE_WEBHOOK_HIGH   → Shuffle workflow → Line Broadcast
-      MEDIUM → SHUFFLE_WEBHOOK_MEDIUM → Shuffle workflow → Outlook immediate
-      LOW    → SHUFFLE_WEBHOOK_LOW    → Shuffle workflow → Outlook digest buffer
+        Priority routing:
+            MEDIUM → SHUFFLE_WEBHOOK_MEDIUM → Shuffle workflow → Outlook immediate
+            LOW    → SHUFFLE_WEBHOOK_LOW    → Shuffle workflow → Outlook digest buffer
 
     Daily digest:
       → SHUFFLE_WEBHOOK_DIGEST → Shuffle workflow → Outlook digest email
     """
 
     def send(self, alert: LLMAlert) -> bool:
+        if alert.priority not in _WEBHOOK_MAP:
+            log.warning("No Shuffle route for priority=%s", alert.priority.value)
+            return False
+
         url = _WEBHOOK_MAP[alert.priority]()
         if not url:
             log.warning(
