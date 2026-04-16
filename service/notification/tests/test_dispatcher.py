@@ -1,4 +1,3 @@
-from unittest.mock import MagicMock, patch
 import pytest
 
 from notification.models.alert import LLMAlert, Priority
@@ -58,22 +57,3 @@ class TestPriority:
     def test_invalid_priority_raises(self):
         with pytest.raises(ValueError):
             Priority("CRITICAL")
-
-
-class TestLineNotifierMessage:
-    def test_message_contains_ip(self):
-        from notification.notifiers.line.notifier import LineNotifier
-        notifier = LineNotifier()
-        alert    = _make_alert("HIGH", 90)
-        msg      = notifier._build_message(alert)
-        assert "1.2.3.4" in msg
-        assert "HIGH" in msg
-        assert "command-and-control" in msg
-
-    def test_explanation_truncated_to_2_lines(self):
-        from notification.notifiers.line.notifier import LineNotifier
-        notifier = LineNotifier()
-        alert    = _make_alert("HIGH")
-        alert.explanation_th = "line1\nline2\nline3\nline4"
-        msg      = notifier._build_message(alert)
-        assert "line3" not in msg

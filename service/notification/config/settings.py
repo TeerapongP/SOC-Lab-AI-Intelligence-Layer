@@ -11,7 +11,14 @@ def _list(key: str, default: str = "") -> List[str]:
     if not raw:
         return []
     if raw.startswith("["):
-        return json.loads(raw)
+        try:
+            parsed = json.loads(raw)
+            if isinstance(parsed, list):
+                return [str(x).strip() for x in parsed if str(x).strip()]
+        except json.JSONDecodeError:
+            # Fall back to tolerant parsing when JSON is malformed.
+            cleaned = raw.strip("[]")
+            return [x.strip().strip('"').strip("'") for x in cleaned.split(",") if x.strip()]
     return [x.strip() for x in raw.split(",") if x.strip()]
 
 
@@ -26,8 +33,13 @@ class _Settings:
     # ── LINE Messaging API ─────────────────────────────────────────────────────
     # LINE Notify ปิดบริการ 31 มี.ค. 2568 → ใช้ Messaging API แทน
     LINE_CHANNEL_ACCESS_TOKEN:  str       = os.getenv("LINE_CHANNEL_ACCESS_TOKEN",  "")
-    LINE_GROUP_ID:              str       = os.getenv("LINE_GROUP_ID",              "")   # ขึ้นต้นด้วย C
     LINE_GRAFANA_BASE_URL:      str       = os.getenv("LINE_GRAFANA_BASE_URL",      "http://localhost:3000")
+
+    # ── Shuffle SOAR webhooks ─────────────────────────────────────────────────
+    SHUFFLE_WEBHOOK_HIGH:       str       = os.getenv("SHUFFLE_WEBHOOK_HIGH",       "")
+    SHUFFLE_WEBHOOK_MEDIUM:     str       = os.getenv("SHUFFLE_WEBHOOK_MEDIUM",     "")
+    SHUFFLE_WEBHOOK_LOW:        str       = os.getenv("SHUFFLE_WEBHOOK_LOW",        "")
+    SHUFFLE_WEBHOOK_DIGEST:     str       = os.getenv("SHUFFLE_WEBHOOK_DIGEST",     "")
 
     # ── Azure / Microsoft Graph ────────────────────────────────────────────────
     OUTLOOK_TENANT_ID:          str       = os.getenv("OUTLOOK_TENANT_ID",          "")

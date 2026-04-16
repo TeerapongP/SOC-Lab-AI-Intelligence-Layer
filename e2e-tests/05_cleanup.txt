@@ -14,5 +14,5 @@ docker exec opencti-opencti-rabbitmq-1 rabbitmqadmin -u thirapongp -p "$RABBIT_P
 docker exec opencti-opencti-rabbitmq-1 rabbitmqadmin -u thirapongp -p "$RABBIT_PASS" delete queue name=e2e.alert.low
 
 # Stop infrastructure if needed
-docker compose -f kafana/docker-compose.yml down
+docker compose -f grafana/docker-compose.yml down
 docker compose -f opencti/docker-compose.yml stop opencti-rabbitmq
