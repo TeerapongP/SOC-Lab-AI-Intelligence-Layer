@@ -22,7 +22,13 @@ class ElasticsearchWriter:
 
     def __init__(self) -> None:
         try:
-            kwargs: dict = {"hosts": [settings.ELASTIC_URL]}
+            kwargs: dict = {
+                "hosts": [settings.ELASTIC_URL],
+                "headers": {
+                    "accept": "application/vnd.elasticsearch+json; compatible-with=8",
+                    "content-type": "application/vnd.elasticsearch+json; compatible-with=8",
+                },
+            }
             if settings.ELASTIC_API_KEY:
                 kwargs["api_key"] = settings.ELASTIC_API_KEY
             self._es = Elasticsearch(**kwargs)

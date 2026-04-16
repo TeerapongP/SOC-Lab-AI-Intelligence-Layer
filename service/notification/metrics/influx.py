@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from influxdb_client import InfluxDBClient, WriteOptions
+from influxdb_client import InfluxDBClient
 from influxdb_client.client.write_api import SYNCHRONOUS
 from influxdb_client.domain.write_precision import WritePrecision
 
@@ -49,7 +49,7 @@ class MetricsWriter:
                 "model_used":   alert.model_used,
             },
             "fields": {
-                "risk_score":         alert.risk_score,
+                "risk_score":         float(alert.risk_score),
                 "faithfulness_score": alert.faithfulness_score,
                 "response_ms":        alert.response_ms,
                 "ioc_confidence":     alert.ioc_confidence,
@@ -64,7 +64,7 @@ class MetricsWriter:
                 bucket    = settings.INFLUX_BUCKET,
                 org       = settings.INFLUX_ORG,
                 record    = point,
-                precision = WritePrecision.SECONDS,
+                precision = WritePrecision.S,
             )
             log.debug("InfluxDB written — alert_id=%s", alert.alert_id)
         except Exception as exc:
