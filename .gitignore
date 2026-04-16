@@ -45,3 +45,5 @@ Thumbs.db
 .env
 *.pem
 secrets.json
+.*.drawio.bkp
+*.drawio.bkp
