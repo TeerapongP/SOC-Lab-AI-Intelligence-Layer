@@ -7,8 +7,8 @@ cd /Users/thirapongpinkaew/Desktop/ME/SOC-Lab-AI-Intelligence-Layer
 source service/.venv/bin/activate
 
 # Start dispatcher (foreground)
-python service/notification/dispatcher/alert_dispatcher.py
+python notification/dispatcher/alert_dispatcher.py
 
 # Optional: Start dispatcher in background and write log
-# nohup python service/notification/dispatcher/alert_dispatcher.py > /tmp/dispatcher.log 2>&1 &
+# nohup python notification/dispatcher/alert_dispatcher.py > /tmp/dispatcher.log 2>&1 &
 # tail -f /tmp/dispatcher.log
