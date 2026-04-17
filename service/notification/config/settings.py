@@ -35,12 +35,6 @@ class _Settings:
     LINE_CHANNEL_ACCESS_TOKEN:  str       = os.getenv("LINE_CHANNEL_ACCESS_TOKEN",  "")
     LINE_GRAFANA_BASE_URL:      str       = os.getenv("LINE_GRAFANA_BASE_URL",      "http://localhost:3000")
 
-    # ── Shuffle SOAR webhooks ─────────────────────────────────────────────────
-    SHUFFLE_WEBHOOK_HIGH:       str       = os.getenv("SHUFFLE_WEBHOOK_HIGH",       "")
-    SHUFFLE_WEBHOOK_MEDIUM:     str       = os.getenv("SHUFFLE_WEBHOOK_MEDIUM",     "")
-    SHUFFLE_WEBHOOK_LOW:        str       = os.getenv("SHUFFLE_WEBHOOK_LOW",        "")
-    SHUFFLE_WEBHOOK_DIGEST:     str       = os.getenv("SHUFFLE_WEBHOOK_DIGEST",     "")
-
     # ── Azure / Microsoft Graph ────────────────────────────────────────────────
     OUTLOOK_TENANT_ID:          str       = os.getenv("OUTLOOK_TENANT_ID",          "")
     OUTLOOK_CLIENT_ID:          str       = os.getenv("OUTLOOK_CLIENT_ID",          "")
