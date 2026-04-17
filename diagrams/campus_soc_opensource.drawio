@@ -136,7 +136,7 @@
         <mxCell id="soar" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#854F0B;strokeColor=#633806;fontColor=#ffffff;fontSize=12;arcSize=10;" value="&lt;b&gt;SOAR ⚠ ไม่มี unblock&lt;/b&gt;&lt;br/&gt;&lt;font style=&#39;font-size:10px&#39;&gt;auto block → PA · ต้องเพิ่ม process&lt;/font&gt;" vertex="1">
           <mxGeometry height="56" width="215" x="610" y="1002" as="geometry" />
         </mxCell>
-        <mxCell id="soar_fix" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#185FA5;strokeColor=#0C447C;fontColor=#ffffff;fontSize=11;arcSize=10;" value="→ Shuffle SOAR (ฟรี · open source)" vertex="1">
+        <mxCell id="soar_fix" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#185FA5;strokeColor=#0C447C;fontColor=#ffffff;fontSize=11;arcSize=10;" value="→ SOAR SOAR (ฟรี · open source)" vertex="1">
           <mxGeometry height="30" width="215" x="610" y="1062" as="geometry" />
         </mxCell>
         <mxCell id="compliance" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#A32D2D;strokeColor=#791F1F;fontColor=#ffffff;fontSize=12;arcSize=10;" value="&lt;b&gt;Compliance report ✗ ไม่มี&lt;/b&gt;&lt;br/&gt;&lt;font style=&#39;font-size:10px&#39;&gt;PDPA · ต้องสร้าง dashboard แยก&lt;/font&gt;" vertex="1">

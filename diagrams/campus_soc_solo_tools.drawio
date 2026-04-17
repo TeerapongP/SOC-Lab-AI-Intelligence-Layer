@@ -70,7 +70,7 @@
         <mxCell id="nas" value="&lt;b&gt;NAS / SAN  (cold 1yr+)&lt;/b&gt;&lt;br/&gt;&lt;font style=&#39;font-size:10px&#39;&gt;ILM rollover · PDPA retention · มีอยู่แล้ว&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#5F5E5A;strokeColor=#444441;fontColor=#fff;fontSize=12;arcSize=10;" parent="1" vertex="1">
           <mxGeometry x="420" y="402" width="220" height="56" as="geometry" />
         </mxCell>
-        <mxCell id="zabbix" value="&lt;b&gt;Zabbix 7 + Prometheus&lt;/b&gt;&lt;br/&gt;&lt;font style=&#39;font-size:10px&#39;&gt;host health · network metrics · SNMP · alert → Shuffle&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#185FA5;strokeColor=#0C447C;fontColor=#fff;fontSize=12;arcSize=10;" parent="1" vertex="1">
+        <mxCell id="zabbix" value="&lt;b&gt;Zabbix 7 + Prometheus&lt;/b&gt;&lt;br/&gt;&lt;font style=&#39;font-size:10px&#39;&gt;host health · network metrics · SNMP · alert → SOAR&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#185FA5;strokeColor=#0C447C;fontColor=#fff;fontSize=12;arcSize=10;" parent="1" vertex="1">
           <mxGeometry x="680" y="402" width="245" height="56" as="geometry" />
         </mxCell>
         <mxCell id="graylog_rules" value="&lt;b&gt;Graylog Event Rules&lt;/b&gt;&lt;br/&gt;&lt;font style=&#39;font-size:10px&#39;&gt;Sigma-like · SSH brute · web exploit · port scan · threshold&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#534AB7;strokeColor=#3C3489;fontColor=#fff;fontSize=12;arcSize=10;" parent="1" vertex="1">
@@ -82,7 +82,7 @@
         <mxCell id="ml_detect" value="&lt;b&gt;ML Anomaly Detection&lt;/b&gt;&lt;br/&gt;&lt;font style=&#39;font-size:10px&#39;&gt;Isolation Forest · Autoencoder · scikit-learn · risky login model&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#534AB7;strokeColor=#3C3489;fontColor=#fff;fontSize=12;arcSize=10;" parent="1" vertex="1">
           <mxGeometry x="670" y="522" width="265" height="56" as="geometry" />
         </mxCell>
-        <mxCell id="shuffle_corr" value="&lt;b&gt;Shuffle SOAR  (correlation)&lt;/b&gt;&lt;br/&gt;&lt;font style=&#39;font-size:10px&#39;&gt;รับ alert · enrich IP via OpenCTI · MITRE ATT&amp;CK map · risk score 0-100&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#185FA5;strokeColor=#0C447C;fontColor=#fff;fontSize=12;arcSize=10;" parent="1" vertex="1">
+        <mxCell id="soar_corr" value="&lt;b&gt;SOAR SOAR  (correlation)&lt;/b&gt;&lt;br/&gt;&lt;font style=&#39;font-size:10px&#39;&gt;รับ alert · enrich IP via OpenCTI · MITRE ATT&amp;CK map · risk score 0-100&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#185FA5;strokeColor=#0C447C;fontColor=#fff;fontSize=12;arcSize=10;" parent="1" vertex="1">
           <mxGeometry x="150" y="642" width="390" height="56" as="geometry" />
         </mxCell>
         <mxCell id="opencti" value="&lt;b&gt;OpenCTI + MISP&lt;/b&gt;&lt;br/&gt;&lt;font style=&#39;font-size:10px&#39;&gt;AbuseIPDB · OTX AlienVault · MISP feeds · IOC lookup · ฟรี&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#854F0B;strokeColor=#633806;fontColor=#fff;fontSize=12;arcSize=10;" parent="1" vertex="1">
@@ -94,7 +94,7 @@
         <mxCell id="chroma" value="&lt;b&gt;ChromaDB  (RAG)&lt;/b&gt;&lt;br/&gt;&lt;font style=&#39;font-size:10px&#39;&gt;vector store · TI context · ฟรี&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#854F0B;strokeColor=#633806;fontColor=#fff;fontSize=11;arcSize=10;" parent="1" vertex="1">
           <mxGeometry x="760" y="742" width="200" height="56" as="geometry" />
         </mxCell>
-        <mxCell id="shuffle_act" value="&lt;b&gt;Shuffle SOAR  (action playbook)&lt;/b&gt;&lt;br/&gt;&lt;font style=&#39;font-size:10px&#39;&gt;HIGH ≥70 → auto-block PA firewall · MEDIUM → email analyst · LOW → log + Grafana annotation&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#185FA5;strokeColor=#0C447C;fontColor=#fff;fontSize=12;arcSize=10;" parent="1" vertex="1">
+        <mxCell id="soar_act" value="&lt;b&gt;SOAR SOAR  (action playbook)&lt;/b&gt;&lt;br/&gt;&lt;font style=&#39;font-size:10px&#39;&gt;HIGH ≥70 → auto-block PA firewall · MEDIUM → email analyst · LOW → log + Grafana annotation&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#185FA5;strokeColor=#0C447C;fontColor=#fff;fontSize=12;arcSize=10;" parent="1" vertex="1">
           <mxGeometry x="70" y="842" width="380" height="56" as="geometry" />
         </mxCell>
         <mxCell id="thehive" value="&lt;b&gt;TheHive 5&lt;/b&gt;&lt;br/&gt;&lt;font style=&#39;font-size:10px&#39;&gt;incident case tracking · IR runbook · analyst workflow&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#185FA5;strokeColor=#0C447C;fontColor=#fff;fontSize=12;arcSize=10;" parent="1" vertex="1">
@@ -201,7 +201,7 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="e16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#534AB7;strokeWidth=1.5;exitX=0.5;exitY=1;" parent="1" source="graylog_rules" target="shuffle_corr" edge="1">
+        <mxCell id="e16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#534AB7;strokeWidth=1.5;exitX=0.5;exitY=1;" parent="1" source="graylog_rules" target="soar_corr" edge="1">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="193" y="610" />
@@ -209,7 +209,7 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="e17" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#534AB7;strokeWidth=1.5;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" parent="1" source="wazuh_ueba" target="shuffle_corr" edge="1">
+        <mxCell id="e17" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#534AB7;strokeWidth=1.5;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" parent="1" source="wazuh_ueba" target="soar_corr" edge="1">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="497" y="610" />
@@ -217,7 +217,7 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="e18" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#534AB7;strokeWidth=1.5;exitX=0.5;exitY=1;" parent="1" source="ml_detect" target="shuffle_corr" edge="1">
+        <mxCell id="e18" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#534AB7;strokeWidth=1.5;exitX=0.5;exitY=1;" parent="1" source="ml_detect" target="soar_corr" edge="1">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="802" y="610" />
@@ -225,19 +225,19 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="e19" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#854F0B;strokeWidth=1.5;exitX=0;exitY=0.5;entryX=1;entryY=0.5;" parent="1" source="opencti" target="shuffle_corr" edge="1">
+        <mxCell id="e19" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#854F0B;strokeWidth=1.5;exitX=0;exitY=0.5;entryX=1;entryY=0.5;" parent="1" source="opencti" target="soar_corr" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e20" style="edgeStyle=orthogonalEdgeStyle;rounded=0;dashed=1;dashPattern=6 4;strokeColor=#854F0B;strokeWidth=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" parent="1" source="opencti" target="chroma" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e21" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#555555;strokeWidth=1.5;exitX=0.35;exitY=1;entryX=0.35;entryY=0;" parent="1" source="shuffle_corr" target="llm" edge="1">
+        <mxCell id="e21" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#555555;strokeWidth=1.5;exitX=0.35;exitY=1;entryX=0.35;entryY=0;" parent="1" source="soar_corr" target="llm" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e22" style="edgeStyle=orthogonalEdgeStyle;rounded=0;dashed=1;dashPattern=6 4;strokeColor=#854F0B;strokeWidth=1;exitX=0;exitY=0.5;entryX=1;entryY=0.5;" parent="1" source="chroma" target="llm" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e23" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#555555;strokeWidth=1.5;exitX=0.22;exitY=1;entryX=0.5;entryY=0;" parent="1" source="llm" target="shuffle_act" edge="1">
+        <mxCell id="e23" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#555555;strokeWidth=1.5;exitX=0.22;exitY=1;entryX=0.5;entryY=0;" parent="1" source="llm" target="soar_act" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e24" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#555555;strokeWidth=1.5;exitX=0.65;exitY=1;entryX=0.3;entryY=0;" parent="1" source="llm" target="thehive" edge="1">
@@ -246,7 +246,7 @@
         <mxCell id="e25" style="edgeStyle=orthogonalEdgeStyle;rounded=0;dashed=1;dashPattern=6 4;strokeColor=#185FA5;strokeWidth=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" parent="1" source="thehive" target="cortex" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e26" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#555555;strokeWidth=1.5;exitX=0.28;exitY=1;entryX=0.28;entryY=0;" parent="1" source="shuffle_act" target="grafana" edge="1">
+        <mxCell id="e26" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#555555;strokeWidth=1.5;exitX=0.28;exitY=1;entryX=0.28;entryY=0;" parent="1" source="soar_act" target="grafana" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="e27" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#555555;strokeWidth=1.5;exitX=0.18;exitY=1;entryX=0.7;entryY=0;" parent="1" source="thehive" target="grafana" edge="1">
@@ -257,7 +257,7 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="e28" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#3B6D11;strokeWidth=1.5;exitX=0.7;exitY=1;entryX=0.3;entryY=0;" parent="1" source="shuffle_act" target="notify" edge="1">
+        <mxCell id="e28" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#3B6D11;strokeWidth=1.5;exitX=0.7;exitY=1;entryX=0.3;entryY=0;" parent="1" source="soar_act" target="notify" edge="1">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="336" y="930" />
@@ -278,7 +278,7 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="autoblock" style="edgeStyle=orthogonalEdgeStyle;rounded=0;dashed=1;dashPattern=8 4;strokeColor=#cc3300;strokeWidth=2;exitX=0.75;exitY=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitDx=0;exitDy=0;" parent="1" source="shuffle_act" target="fw" edge="1">
+        <mxCell id="autoblock" style="edgeStyle=orthogonalEdgeStyle;rounded=0;dashed=1;dashPattern=8 4;strokeColor=#cc3300;strokeWidth=2;exitX=0.75;exitY=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitDx=0;exitDy=0;" parent="1" source="soar_act" target="fw" edge="1">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="355" y="920" />
@@ -323,10 +323,10 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="docker_note" value="&lt;b&gt;Docker Compose stack  (VMware VM · single server)&lt;/b&gt;&lt;br/&gt;&lt;font style=&#39;font-size:10px&#39;&gt;Graylog 6 · OpenSearch 2 · Wazuh 4 · Zabbix 7 · Prometheus · OpenCTI · MISP · Shuffle · TheHive 5 · Cortex · Grafana 11 · ChromaDB&lt;br/&gt;LM Studio + Qwen3.5-35B-A3B  →  Mac Mini M4 Pro 48 GB  (local REST API  localhost:1234)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1a1a2e;strokeColor=#555;fontColor=#cccccc;fontSize=11;arcSize=6;dashed=1;" parent="1" vertex="1">
+        <mxCell id="docker_note" value="&lt;b&gt;Docker Compose stack  (VMware VM · single server)&lt;/b&gt;&lt;br/&gt;&lt;font style=&#39;font-size:10px&#39;&gt;Graylog 6 · OpenSearch 2 · Wazuh 4 · Zabbix 7 · Prometheus · OpenCTI · MISP · SOAR · TheHive 5 · Cortex · Grafana 11 · ChromaDB&lt;br/&gt;LM Studio + Qwen3.5-35B-A3B  →  Mac Mini M4 Pro 48 GB  (local REST API  localhost:1234)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1a1a2e;strokeColor=#555;fontColor=#cccccc;fontSize=11;arcSize=6;dashed=1;" parent="1" vertex="1">
           <mxGeometry x="30" y="1056" width="760" height="64" as="geometry" />
         </mxCell>
-        <mxCell id="solo_note" value="&lt;b&gt;✓ Solo Operator Model&lt;/b&gt;&lt;br/&gt;&lt;font style=&#39;font-size:10px&#39;&gt;Shuffle จัดการ routine อัตโนมัติ · LLM อธิบาย alert เป็นภาษาไทย · เปิด Grafana วันละครั้งเช้า&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0F6E56;strokeColor=#085041;fontColor=#fff;fontSize=11;arcSize=6;" parent="1" vertex="1">
+        <mxCell id="solo_note" value="&lt;b&gt;✓ Solo Operator Model&lt;/b&gt;&lt;br/&gt;&lt;font style=&#39;font-size:10px&#39;&gt;SOAR จัดการ routine อัตโนมัติ · LLM อธิบาย alert เป็นภาษาไทย · เปิด Grafana วันละครั้งเช้า&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0F6E56;strokeColor=#085041;fontColor=#fff;fontSize=11;arcSize=6;" parent="1" vertex="1">
           <mxGeometry x="810" y="1056" width="255" height="64" as="geometry" />
         </mxCell>
         <mxCell id="leg_bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#111;strokeColor=#333;" parent="1" vertex="1">

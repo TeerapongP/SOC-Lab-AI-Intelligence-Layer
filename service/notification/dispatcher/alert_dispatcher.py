@@ -21,7 +21,7 @@ from notification.metrics.elasticsearch import ElasticsearchWriter
 from notification.metrics.influx import MetricsWriter
 from notification.models.alert import LLMAlert, Priority
 from notification.notifiers.line.notifier import LineNotifier
-from notification.shuffle.webhook import ShuffleWebhook
+from notification.notifiers.outlook.notifier import OutlookNotifier
 from notification.logging_utils import get_logger, setup_logging
 
 setup_logging()
@@ -51,16 +51,11 @@ def _make_consumer() -> KafkaConsumer:
 class AlertDispatcher:
     """
     Consumes LLM JSON output from pa5220.llm_output and routes by priority
-    to direct LINE broadcast (HIGH) and Shuffle SOAR (MEDIUM/LOW + digest).
+    to direct channels.
 
-        HIGH   → LINE Messaging API broadcast (immediate)
-        MEDIUM → Shuffle webhook (medium) → Outlook email (immediate)
-        LOW    → Shuffle webhook (low)    → Outlook daily digest buffer
-
-    Shuffle URLs configured in settings:
-        SHUFFLE_WEBHOOK_MEDIUM
-        SHUFFLE_WEBHOOK_LOW
-        SHUFFLE_WEBHOOK_DIGEST
+        HIGH   → LINE Messaging API broadcast + Outlook email (immediate)
+        MEDIUM → Outlook email (immediate)
+        LOW    → Daily Outlook digest (scheduled)
     """
 
     def __init__(self) -> None:
@@ -69,7 +64,7 @@ class AlertDispatcher:
         self._metrics  = MetricsWriter()
         self._elastic  = ElasticsearchWriter()
         self._line     = LineNotifier()
-        self._shuffle  = ShuffleWebhook()
+        self._outlook  = OutlookNotifier()
         self._running  = True
 
         self._counts: dict[str, int]    = {p.value: 0 for p in Priority}
@@ -131,8 +126,9 @@ class AlertDispatcher:
 
         if alert.priority == Priority.HIGH:
             self._line.send(alert)
-        else:
-            self._shuffle.send(alert)
+            self._outlook.send(alert)
+        elif alert.priority == Priority.MEDIUM:
+            self._outlook.send(alert)
 
     def _check_daily_digest(self) -> None:
         now = datetime.now(tz=timezone.utc)
@@ -140,9 +136,9 @@ class AlertDispatcher:
             now.hour == settings.OUTLOOK_DIGEST_HOUR
             and now.day != self._last_digest_day
         ):
-            log.info("Triggering daily digest via Shuffle (day=%d)", now.day)
+            log.info("Triggering daily digest via Outlook (day=%d)", now.day)
             self._last_digest_day = now.day
-            self._shuffle.send_digest(stats=self._collect_digest_stats())
+            self._outlook.send_digest(stats=self._collect_digest_stats())
             self._reset_daily_counters()
 
     def _collect_digest_stats(self) -> dict:
