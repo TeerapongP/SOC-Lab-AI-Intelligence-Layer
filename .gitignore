@@ -37,6 +37,9 @@ soc-env/
 # =========================
 # 4. Security & Configs
 # =========================
+.env
+*.pem
+secrets.json
 # =========================
 # 5. OS Generated Files
 # =========================
@@ -47,3 +50,9 @@ Thumbs.db
 secrets.json
 .*.drawio.bkp
 *.drawio.bkp
+
+# =========================
+# 4. Security & Configs
+# =========================
+# ห้ามเอาไฟล์ที่มี Password หรือ API Key ของ OpenCTI ขึ้น GitHub เด็ดขาด!
+
