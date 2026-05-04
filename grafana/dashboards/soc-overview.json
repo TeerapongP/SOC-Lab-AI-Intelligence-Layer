@@ -1,0 +1,92 @@
+{
+  "uid": "soc-main",
+  "title": "SOC Overview",
+  "tags": ["soc", "thesis"],
+  "timezone": "Asia/Bangkok",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Risk Score Trend",
+      "type": "timeseries",
+      "datasource": {"type": "influxdb", "uid": "influx-soc"},
+      "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"alerts\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"soc_alert\" and r._field == \"risk_score\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+        }
+      ],
+      "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
+      "options": {"legend": {"displayMode": "list", "placement": "bottom"}}
+    },
+    {
+      "id": 2,
+      "title": "Alert Count By Priority",
+      "type": "piechart",
+      "datasource": {"type": "influxdb", "uid": "influx-soc"},
+      "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"alerts\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"soc_alert\" and r._field == \"risk_score\")\n  |> group(columns: [\"priority\"])\n  |> count()"
+        }
+      ],
+      "options": {"legend": {"displayMode": "table", "placement": "right"}}
+    },
+    {
+      "id": 3,
+      "title": "Response Time",
+      "type": "gauge",
+      "datasource": {"type": "influxdb", "uid": "influx-soc"},
+      "gridPos": {"x": 0, "y": 8, "w": 6, "h": 7},
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"alerts\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"soc_alert\" and r._field == \"response_ms\")\n  |> mean()"
+        }
+      ],
+      "fieldConfig": {"defaults": {"unit": "ms", "min": 0}, "overrides": []},
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}}
+    },
+    {
+      "id": 4,
+      "title": "Faithfulness Score",
+      "type": "gauge",
+      "datasource": {"type": "influxdb", "uid": "influx-soc"},
+      "gridPos": {"x": 6, "y": 8, "w": 6, "h": 7},
+      "targets": [
+        {
+          "refId": "A",
+          "query": "from(bucket: \"alerts\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"soc_alert\" and r._field == \"faithfulness_score\")\n  |> mean()"
+        }
+      ],
+      "fieldConfig": {"defaults": {"min": 0, "max": 1, "unit": "percentunit"}, "overrides": []},
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}}
+    },
+    {
+      "id": 5,
+      "title": "Latest Alerts",
+      "type": "table",
+      "datasource": {"type": "elasticsearch", "uid": "elastic-soc"},
+      "gridPos": {"x": 12, "y": 8, "w": 12, "h": 7},
+      "targets": [
+        {
+          "refId": "A",
+          "alias": "alerts",
+          "bucketAggs": [],
+          "metrics": [{"id": "1", "type": "raw_document"}],
+          "query": "*",
+          "timeField": "timestamp"
+        }
+      ],
+      "options": {"showHeader": true}
+    }
+  ]
+}

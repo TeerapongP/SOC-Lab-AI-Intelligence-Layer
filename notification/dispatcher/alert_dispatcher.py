@@ -5,10 +5,9 @@ import signal
 import sys
 import time
 from collections import Counter
-from datetime import datetime, timezone
 from pathlib import Path
 
-from kafka import KafkaConsumer
+from kafka import KafkaConsumer, KafkaProducer
 from kafka.errors import NoBrokersAvailable
 
 _SERVICE_ROOT = Path(__file__).resolve().parents[2]
@@ -21,13 +20,12 @@ from notification.metrics.elasticsearch import ElasticsearchWriter
 from notification.metrics.influx import MetricsWriter
 from notification.models.alert import LLMAlert, Priority
 from notification.notifiers.line.notifier import LineNotifier
-from notification.notifiers.outlook.notifier import OutlookNotifier
 from notification.logging_utils import get_logger, setup_logging
 
 setup_logging()
 log = get_logger("dashboard.dispatcher")
 
-_LOG_INTERVAL          = 100
+_LOG_INTERVAL = 100
 _KAFKA_POLL_TIMEOUT_MS = 5_000
 
 
@@ -40,40 +38,44 @@ def _make_consumer() -> KafkaConsumer:
                 group_id=settings.KAFKA_DISPATCHER_GROUP,
                 auto_offset_reset=settings.KAFKA_AUTO_OFFSET,
                 enable_auto_commit=True,
-                value_deserializer=lambda b: json.loads(b.decode("utf-8")),
+                value_deserializer=lambda b: b.decode("utf-8", errors="replace"),
             )
         except NoBrokersAvailable:
-            log.warning("Kafka not ready — attempt %d/%d", attempt, settings.KAFKA_CONNECT_RETRIES)
+            log.warning("Kafka not ready - attempt %d/%d", attempt, settings.KAFKA_CONNECT_RETRIES)
             time.sleep(5)
     raise RuntimeError("Cannot connect to Kafka after %d attempts" % settings.KAFKA_CONNECT_RETRIES)
 
 
+def _make_producer() -> KafkaProducer:
+    return KafkaProducer(
+        bootstrap_servers=settings.KAFKA_BOOTSTRAP,
+        value_serializer=lambda value: json.dumps(value, ensure_ascii=False).encode("utf-8"),
+        linger_ms=50,
+        retries=3,
+    )
+
+
 class AlertDispatcher:
     """
-    Consumes LLM JSON output from pa5220.llm_output and routes by priority
-    to direct channels.
-
-        HIGH   → LINE Messaging API broadcast + Outlook email (immediate)
-        MEDIUM → Outlook email (immediate)
-        LOW    → Daily Outlook digest (scheduled)
+    Consumes LLM JSON output from pa5220.llm_output and routes alerts to
+    metrics, Elasticsearch, RabbitMQ, and LINE for high-priority alerts.
     """
 
     def __init__(self) -> None:
         self._consumer = _make_consumer()
+        self._producer = _make_producer()
         self._eventbus = EventBus()
-        self._metrics  = MetricsWriter()
-        self._elastic  = ElasticsearchWriter()
-        self._line     = LineNotifier()
-        self._outlook  = OutlookNotifier()
-        self._running  = True
+        self._metrics = MetricsWriter()
+        self._elastic = ElasticsearchWriter()
+        self._line = LineNotifier()
+        self._running = True
 
-        self._counts: dict[str, int]    = {p.value: 0 for p in Priority}
+        self._counts: dict[str, int] = {p.value: 0 for p in Priority}
         self._attack_type_counter: Counter = Counter()
         self._mttd_samples: list[float] = []
-        self._last_digest_day: int      = -1
-        self._total_processed: int      = 0
+        self._total_processed: int = 0
 
-        signal.signal(signal.SIGINT,  self._handle_shutdown)
+        signal.signal(signal.SIGINT, self._handle_shutdown)
         signal.signal(signal.SIGTERM, self._handle_shutdown)
 
     def run(self) -> None:
@@ -88,13 +90,13 @@ class AlertDispatcher:
                 for message in messages:
                     self._handle_message(message)
 
-            self._check_daily_digest()
-
         self._shutdown()
 
     def _handle_message(self, message) -> None:
+        raw_value = message.value
         try:
-            alert = LLMAlert.from_dict(message.value)
+            payload = json.loads(raw_value)
+            alert = LLMAlert.from_dict(payload)
             self._dispatch(alert)
 
             self._total_processed += 1
@@ -109,10 +111,12 @@ class AlertDispatcher:
                     self._counts["LOW"],
                 )
 
-        except (KeyError, ValueError) as exc:
-            log.warning("Malformed alert: %s — %s", message.value, exc)
+        except (json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
+            log.warning("Malformed alert: %s - %s", raw_value, exc)
+            self._send_dlq(message, raw_value, exc, stage="parse")
         except Exception as exc:
             log.error("Dispatch error: %s", exc, exc_info=True)
+            self._send_dlq(message, raw_value, exc, stage="dispatch")
 
     def _dispatch(self, alert: LLMAlert) -> None:
         self._metrics.write_alert(alert)
@@ -126,45 +130,32 @@ class AlertDispatcher:
 
         if alert.priority == Priority.HIGH:
             self._line.send(alert)
-            self._outlook.send(alert)
-        elif alert.priority == Priority.MEDIUM:
-            self._outlook.send(alert)
 
-    def _check_daily_digest(self) -> None:
-        now = datetime.now(tz=timezone.utc)
-        if (
-            now.hour == settings.OUTLOOK_DIGEST_HOUR
-            and now.day != self._last_digest_day
-        ):
-            log.info("Triggering daily digest via Outlook (day=%d)", now.day)
-            self._last_digest_day = now.day
-            self._outlook.send_digest(stats=self._collect_digest_stats())
-            self._reset_daily_counters()
-
-    def _collect_digest_stats(self) -> dict:
-        top      = self._attack_type_counter.most_common(1)
-        avg_mttd = (
-            round(sum(self._mttd_samples) / len(self._mttd_samples), 2)
-            if self._mttd_samples else None
-        )
-        return {
-            "alert_count":      sum(self._counts.values()),
-            "high_count":       self._counts["HIGH"],
-            "medium_count":     self._counts["MEDIUM"],
-            "low_count":        self._counts["LOW"],
-            "top_attack_type":  top[0][0] if top else "N/A",
-            "top_attack_count": top[0][1] if top else 0,
-            "mttd_avg_s":       avg_mttd if avg_mttd is not None else "N/A",
+    def _send_dlq(self, message, raw_value: str, exc: Exception, stage: str) -> None:
+        dlq_record = {
+            "stage": stage,
+            "error_type": type(exc).__name__,
+            "error": str(exc),
+            "source_topic": message.topic,
+            "source_partition": message.partition,
+            "source_offset": message.offset,
+            "raw_value": raw_value,
+            "observed_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         }
-
-    def _reset_daily_counters(self) -> None:
-        self._counts = {p.value: 0 for p in Priority}
-        self._attack_type_counter.clear()
-        self._mttd_samples.clear()
-        log.info("Daily counters reset.")
+        try:
+            self._producer.send(settings.KAFKA_LLM_DLQ_TOPIC, dlq_record)
+            self._producer.flush(timeout=5)
+            log.info(
+                "DLQ published topic=%s source_offset=%s stage=%s",
+                settings.KAFKA_LLM_DLQ_TOPIC,
+                message.offset,
+                stage,
+            )
+        except Exception as dlq_exc:
+            log.error("DLQ publish failed: %s", dlq_exc, exc_info=True)
 
     def _handle_shutdown(self, signum: int, _frame) -> None:
-        log.info("Received signal %d — shutting down gracefully", signum)
+        log.info("Received signal %d - shutting down gracefully", signum)
         self._running = False
 
     def _shutdown(self) -> None:
@@ -172,6 +163,7 @@ class AlertDispatcher:
         self._eventbus.close()
         self._metrics.close()
         self._elastic.close()
+        self._producer.close()
         self._consumer.close()
         log.info("Dispatcher stopped. Total processed: %d", self._total_processed)
 

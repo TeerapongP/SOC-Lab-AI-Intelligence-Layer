@@ -1,0 +1,12 @@
+FROM python:3.11-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PYTHONDONTWRITEBYTECODE=1
+
+WORKDIR /app
+
+RUN python -m pip install --upgrade pip \
+    && pip install kafka-python>=2.3.0 pyarrow>=16.0.0
+
+COPY ingest_parquet_to_kafka.py .

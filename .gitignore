@@ -10,6 +10,7 @@ Data/
 # ละเว้นไฟล์ข้อมูลขนาดใหญ่ (เผื่อเผลอวางไว้นอกโฟลเดอร์)
 *.csv
 *.tsv
+*.parquet
 *.pcap
 *.pcapng
 *.zip
@@ -55,4 +56,3 @@ secrets.json
 # 4. Security & Configs
 # =========================
 # ห้ามเอาไฟล์ที่มี Password หรือ API Key ของ OpenCTI ขึ้น GitHub เด็ดขาด!
-

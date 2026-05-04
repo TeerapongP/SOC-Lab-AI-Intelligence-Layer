@@ -1,0 +1,26 @@
+name: thesis-notification
+
+services:
+  alert-dispatcher:
+    build:
+      context: .
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      KAFKA_BOOTSTRAP: ${KAFKA_DOCKER_BOOTSTRAP:-kafka-broker:29092}
+      RABBITMQ_URL: ${RABBITMQ_DOCKER_URL:-amqp://guest:guest@host.docker.internal:5672/}
+      INFLUX_URL: ${INFLUX_DOCKER_URL:-http://host.docker.internal:8086}
+      ELASTIC_URL: ${ELASTIC_DOCKER_URL:-http://host.docker.internal:9200}
+    healthcheck:
+      test: ["CMD", "python", "-m", "notification.scripts.healthcheck"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 30s
+    networks:
+      - soc_shared
+
+networks:
+  soc_shared:
+    external: true
