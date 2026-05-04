@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from influxdb_client import InfluxDBClient, WriteOptions
+from influxdb_client import InfluxDBClient
 from influxdb_client.client.write_api import SYNCHRONOUS
 from influxdb_client.domain.write_precision import WritePrecision
 
@@ -64,7 +64,7 @@ class MetricsWriter:
                 bucket    = settings.INFLUX_BUCKET,
                 org       = settings.INFLUX_ORG,
                 record    = point,
-                precision = WritePrecision.SECONDS,
+                precision = WritePrecision.S,
             )
             log.debug("InfluxDB written — alert_id=%s", alert.alert_id)
         except Exception as exc:

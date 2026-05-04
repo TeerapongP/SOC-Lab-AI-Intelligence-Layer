@@ -19,6 +19,11 @@ def setup_logging(level: int = logging.INFO) -> None:
         root.addHandler(handler)
     root.setLevel(level)
 
+    # Keep third-party client startup/reconnect chatter out of normal logs.
+    logging.getLogger("kafka").setLevel(logging.WARNING)
+    logging.getLogger("pika").setLevel(logging.CRITICAL)
+    logging.getLogger("elastic_transport").setLevel(logging.WARNING)
+
 
 def get_logger(name: str) -> logging.Logger:
     return logging.getLogger(name)

@@ -1,0 +1,150 @@
+name: thesis-service-layer
+
+services:
+  chromadb:
+    image: chromadb/chroma:1.5.8
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      IS_PERSISTENT: "TRUE"
+      PERSIST_DIRECTORY: /chroma/chroma
+      ANONYMIZED_TELEMETRY: "FALSE"
+    volumes:
+      - chroma-data:/chroma/chroma
+    networks:
+      - service_layer
+    healthcheck:
+      test: ["CMD", "chroma", "--version"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  kafka-init:
+    image: confluentinc/cp-kafka:latest
+    restart: "no"
+    networks:
+      - soc_shared
+    command:
+      - /bin/sh
+      - -c
+      - |
+        set -e
+        ensure_topic() {
+          topic="$$1"
+          partitions="$$2"
+          kafka-topics --bootstrap-server kafka-broker:29092 --create --if-not-exists --topic "$$topic" --partitions "$$partitions" --replication-factor 1
+          current="$$(kafka-topics --bootstrap-server kafka-broker:29092 --describe --topic "$$topic" | sed -n 's/.*PartitionCount: \([0-9][0-9]*\).*/\1/p' | head -1)"
+          if [ "$${current:-0}" -lt "$$partitions" ]; then
+            kafka-topics --bootstrap-server kafka-broker:29092 --alter --topic "$$topic" --partitions "$$partitions"
+          else
+            echo "Topic $$topic already has $$current partition(s)"
+          fi
+        }
+
+        ensure_topic pa5220.raw 3
+        ensure_topic pa5220.enriched 3
+        ensure_topic pa5220.features 3
+        ensure_topic pa5220.llm_output 3
+        ensure_topic pa5220.llm_output.dlq 1
+        ensure_topic pa5220.raw.dlq 1
+
+  enrich:
+    build:
+      context: .
+    restart: unless-stopped
+    command: ["python", "enrich.py"]
+    env_file:
+      - .env
+    environment:
+      KAFKA_BOOTSTRAP: kafka-broker:29092
+      OPENCTI_URL: http://opencti-platform:8080
+      CHROMA_HOST: chromadb
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+    networks:
+      - service_layer
+      - soc_shared
+      - opencti_soc_mgmt
+
+  feature-extractor:
+    build:
+      context: .
+    restart: unless-stopped
+    command: ["python", "-m", "feature_extractor.service"]
+    env_file:
+      - .env
+    environment:
+      KAFKA_BOOTSTRAP: kafka-broker:29092
+      OPENCTI_URL: http://opencti-platform:8080
+      CHROMA_HOST: chromadb
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+    networks:
+      - service_layer
+      - soc_shared
+      - opencti_soc_mgmt
+
+  rag-reindexer:
+    build:
+      context: .
+    restart: unless-stopped
+    command: ["python", "-m", "rag.reindexer"]
+    env_file:
+      - .env
+    environment:
+      KAFKA_BOOTSTRAP: kafka-broker:29092
+      OPENCTI_URL: http://opencti-platform:8080
+      CHROMA_HOST: chromadb
+    depends_on:
+      chromadb:
+        condition: service_started
+    volumes:
+      - hf-cache:/root/.cache/huggingface
+    networks:
+      - service_layer
+      - soc_shared
+      - opencti_soc_mgmt
+
+  parquet-ingest:
+    build:
+      context: .
+      dockerfile: Dockerfile.ingest
+    profiles:
+      - ingest
+    restart: "no"
+    command:
+      - python
+      - ingest_parquet_to_kafka.py
+      - --input-folder
+      - /data/dataset_cleaned_parquet
+      - --topic
+      - pa5220.raw
+      - --batch-size
+      - "10000"
+    env_file:
+      - .env
+    environment:
+      KAFKA_BOOTSTRAP: kafka-broker:29092
+    volumes:
+      - ../dataset:/data:ro
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+    networks:
+      - soc_shared
+
+volumes:
+  chroma-data:
+  hf-cache:
+
+networks:
+  service_layer:
+    driver: bridge
+  soc_shared:
+    external: true
+  opencti_soc_mgmt:
+    external: true

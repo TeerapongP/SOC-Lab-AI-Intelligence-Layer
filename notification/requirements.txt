@@ -7,10 +7,10 @@ pika>=1.3.0
 # InfluxDB
 influxdb-client>=1.40.0
 
-# Elasticsearch
-elasticsearch>=8.0.0
+# Elasticsearch client must stay compatible with the local 8.x server.
+elasticsearch>=8.0.0,<9.0.0
 
-# HTTP (Line Notify + Microsoft Graph)
+# HTTP (LINE Messaging API)
 requests>=2.31.0
 
 # Config

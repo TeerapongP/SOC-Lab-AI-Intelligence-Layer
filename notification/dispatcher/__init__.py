@@ -1,1 +1,1 @@
-from .alert_dispatcher import AlertDispatcher
+"""Notification dispatcher package."""
