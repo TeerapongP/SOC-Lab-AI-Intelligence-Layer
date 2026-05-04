@@ -16,7 +16,7 @@ class MetricsWriter:
     Writes alert metrics to InfluxDB.
 
     Measurement: soc_alert
-    Tags:        priority, anomaly_type, mitre_tactic, model_used
+    Tags:        alert_id, source_ip, priority, anomaly_type, mitre_tactic, model_used
     Fields:      risk_score, mttd_s, faithfulness_score, response_ms,
                  ioc_confidence, actor_known
     """
@@ -44,6 +44,9 @@ class MetricsWriter:
             "measurement": "soc_alert",
             "tags": {
                 "priority":     alert.priority.value,
+                "alert_id":      alert.alert_id,
+                "source_ip":     alert.source_ip,
+                "dst_port":      str(alert.dst_port),
                 "anomaly_type": alert.anomaly_type,
                 "mitre_tactic": alert.mitre_tactic,
                 "model_used":   alert.model_used,
