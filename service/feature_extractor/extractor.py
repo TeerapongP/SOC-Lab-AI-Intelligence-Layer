@@ -14,7 +14,7 @@ from enrich.utils.logging import get_logger
 
 log = get_logger("feature_extractor")
 
-# ── IOC type → ordinal encoding ───────────────────────────────────────────────
+
 _IOC_TYPE_MAP: dict[str, int] = {
     "none":        0,
     "ipv4-addr":   1,
@@ -23,7 +23,7 @@ _IOC_TYPE_MAP: dict[str, int] = {
     "file":        4,
 }
 
-# ── MITRE phase → ordinal encoding (severity proxy) ──────────────────────────
+
 _MITRE_PHASE_MAP: dict[str, int] = {
     "none":                  0,
     "reconnaissance":        1,
@@ -46,21 +46,19 @@ _MITRE_PHASE_MAP: dict[str, int] = {
 @dataclass
 class FeatureVector:
     """9-feature vector ready for ML model input."""
+    bytes_per_session:    float
+    login_velocity:       float
+    geo_anomaly:          float
+    failed_auth_ratio:    float
+    beaconing_interval:   float
 
-    # ── Network features (5) ──────────────────────────────────────────────────
-    bytes_per_session:    float   # bytes_sent + bytes_recv / session_duration
-    login_velocity:       float   # packets / session_duration (proxy)
-    geo_anomaly:          float   # 0 or 1 — placeholder for GeoIP check
-    failed_auth_ratio:    float   # 0.0–1.0 — from action=="deny" ratio (session)
-    beaconing_interval:   float   # session_duration proxy for beaconing
 
-    # ── CTI features (4) ─────────────────────────────────────────────────────
-    ioc_confidence:       float   # 0.0–1.0 from OpenCTI
-    ioc_type_enc:         int     # ordinal encoded ioc_type
-    mitre_phase_enc:      int     # ordinal encoded mitre_phase
-    actor_known:          int     # 0 or 1
+    ioc_confidence:       float
+    ioc_type_enc:         int
+    mitre_phase_enc:      int
+    actor_known:          int
 
-    # ── Metadata (not ML features — pass-through for downstream) ─────────────
+
     src_ip:               str     = ""
     dst_ip:               str     = ""
     dst_port:             int     = 0
@@ -72,7 +70,7 @@ class FeatureVector:
     threat_name:          str     = ""
     mitre_phase:          str     = "none"
 
-    # ── Scaled values (filled after fit/transform) ────────────────────────────
+
     scaled: Optional[list[float]] = None
 
 
@@ -86,7 +84,6 @@ class FeatureExtractor:
       - load_scaler(path)   — reload for inference
       - transform(record)   — scale at inference time
     """
-
     _NETWORK_FEATURES = [
         "bytes_per_session",
         "login_velocity",
@@ -109,17 +106,16 @@ class FeatureExtractor:
             self.load_scaler(scaler_path)
             log.info("Scaler loaded from %s", scaler_path)
 
-    # ── Public API ─────────────────────────────────────────────────────────────
 
     def extract(self, rec: EnrichedRecord) -> FeatureVector:
         """Extract raw (unscaled) features from an EnrichedRecord."""
-        duration = max(rec.session_duration, 0.001)  # avoid div/0
+        duration = max(rec.session_duration, 0.001)
         total_bytes = rec.bytes_sent + rec.bytes_recv
 
         fv = FeatureVector(
             bytes_per_session  = total_bytes / duration,
             login_velocity     = rec.packets / duration,
-            geo_anomaly        = 0.0,           # populated by GeoIP service (future)
+            geo_anomaly        = 0.0,
             failed_auth_ratio  = 1.0 if rec.action == "deny" else 0.0,
             beaconing_interval = duration,
             ioc_confidence     = rec.ioc_confidence,
@@ -176,7 +172,6 @@ class FeatureExtractor:
         with open(path, "rb") as f:
             self._scaler = pickle.load(f)
 
-    # ── Private ────────────────────────────────────────────────────────────────
 
     def _to_array(self, fv: FeatureVector) -> list[float]:
         return [

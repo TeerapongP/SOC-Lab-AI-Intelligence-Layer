@@ -60,7 +60,6 @@ class AlertDispatcher:
     Consumes LLM JSON output from pa5220.llm_output and routes alerts to
     metrics, Elasticsearch, RabbitMQ, and LINE for high-priority alerts.
     """
-
     def __init__(self) -> None:
         self._consumer = _make_consumer()
         self._producer = _make_producer()

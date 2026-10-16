@@ -12,16 +12,15 @@ class PipelineMetrics:
     Logged periodically by the runner; can be extended to push
     to Prometheus/StatsD later without touching pipeline logic.
     """
-
     _lock:      threading.Lock = field(default_factory=threading.Lock, repr=False)
     _start_time: float         = field(default_factory=time.monotonic,  repr=False)
 
     processed:  int = 0
     skipped:    int = 0
     errors:     int = 0
-    cti_hits:   int = 0   # lookups that returned confidence > 0
-    cti_misses: int = 0   # lookups that returned confidence == 0
-    dlq_sent:   int = 0   # messages sent to dead-letter topic
+    cti_hits:   int = 0
+    cti_misses: int = 0
+    dlq_sent:   int = 0
 
     def inc(self, counter: str, amount: int = 1) -> None:
         with self._lock:

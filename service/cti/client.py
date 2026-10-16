@@ -18,7 +18,6 @@ class CTIClient:
     The direct GraphQL calls keep this service compatible with the local
     OpenCTI 5.12 schema instead of relying on a pycti client version match.
     """
-
     def __init__(self, url: str, token: str, cache_size: int = 5_000) -> None:
         self._graphql_url = url.rstrip("/") + "/graphql"
         self._headers = {
@@ -37,8 +36,9 @@ class CTIClient:
         Query OpenCTI for an IP indicator.
         Returns a CTIResult with zero/none defaults on miss.
         """
-        if ip in self._cache:
-            return self._cache.get(ip)  # type: ignore[return-value]
+        cached = self._cache.get(ip)
+        if cached is not None:
+            return cached
 
         result = CTIResult()
 

@@ -100,7 +100,7 @@ def build_line_protocol(
         ts_list = timestamps
 
     for i, t in enumerate(ts_list):
-        # Smooth baseline + periodic spikes for visually interesting charts.
+
         wave = 20.0 * (1.0 + math.sin(i / 40.0))
         noise = random.uniform(-8.0, 8.0)
 
@@ -117,7 +117,6 @@ def build_line_protocol(
             priority = priorities[0]
 
         response_ms = int(max(100.0, 700.0 + 6.0 * risk + random.uniform(-120.0, 180.0)))
-        faithfulness = max(0.5, min(1.0, 0.98 - risk / 500.0 + random.uniform(-0.03, 0.03)))
         ioc_conf = max(0.0, min(1.0, risk / 100.0 + random.uniform(-0.1, 0.1)))
         actor_known = 1 if random.random() < (0.15 + risk / 200.0) else 0
         mttd_s = max(3.0, 180.0 - risk + random.uniform(-20.0, 20.0))
@@ -129,8 +128,8 @@ def build_line_protocol(
         ns = int(t.timestamp() * 1_000_000_000)
         lines.append(
             f"{measurement},priority={priority},anomaly_type={anomaly},mitre_tactic={tactic},model_used={model},source={source_tag} "
-            f"risk_score={risk:.2f},response_ms={response_ms}i,faithfulness_score={faithfulness:.4f},"
-            f"ioc_confidence={ioc_conf:.4f},actor_known={actor_known}i,mttd_s={mttd_s:.2f} {ns}"
+            f"risk_score={risk:.2f},response_ms={response_ms}i,ioc_confidence={ioc_conf:.4f},"
+            f"actor_known={actor_known}i,mttd_s={mttd_s:.2f} {ns}"
         )
 
     return lines

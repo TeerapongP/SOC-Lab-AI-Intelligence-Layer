@@ -12,7 +12,7 @@ log = get_logger("dashboard.notifiers.line")
 
 _GRAFANA_DASHBOARD_PATH = "/d/soc-main/soc-overview"
 _LINE_BROADCAST_URL     = "https://api.line.me/v2/bot/message/broadcast"
-_LINE_MAX_TEXT_CHARS    = 5000   # LINE Messaging API text message limit
+_LINE_MAX_TEXT_CHARS    = 5000
 
 
 class LineNotifier:
@@ -22,7 +22,6 @@ class LineNotifier:
     Required settings:
         LINE_CHANNEL_ACCESS_TOKEN  — from LINE Developers Console
     """
-
     def __init__(self) -> None:
         self._headers = {
             "Authorization": f"Bearer {settings.LINE_CHANNEL_ACCESS_TOKEN}",

@@ -1,21 +1,15 @@
 E2E Step 1: Start infrastructure
 
-# Go to project root
-cd /Users/thirapongpinkaew/Desktop/ME/SOC-Lab-AI-Intelligence-Layer
+Run from the repository root.
 
-# Ensure shared Docker network exists
 docker network inspect soc_shared >/dev/null 2>&1 || docker network create soc_shared
 
-# Start Kafka stack
-docker compose -f grafana/docker-compose.yml up -d
+docker compose --env-file notification/.env -f grafana/docker-compose.yml up -d
 
-# Start RabbitMQ only (from OpenCTI stack)
-docker compose -f opencti/docker-compose.yml up -d opencti-rabbitmq
+docker compose --env-file opencti/.env -f opencti/docker-compose.yml up -d opencti-rabbitmq
 
-# Check container status
 docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
 
-# Ensure topic exists
 docker exec grafana-kafka-broker-1 kafka-topics \
   --bootstrap-server localhost:9092 \
   --create --if-not-exists \

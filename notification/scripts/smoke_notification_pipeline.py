@@ -82,7 +82,6 @@ def main() -> int:
         "explanation_th": "ทดสอบ notification pipeline แบบไม่ผ่าน LLM/ML",
         "remediation": ["no action"],
         "top_3_features": ["smoke"],
-        "faithfulness_score": 1.0,
         "response_ms": 1,
     }
     _send_raw(settings.KAFKA_LLM_OUTPUT_TOPIC, json.dumps(payload, ensure_ascii=False))

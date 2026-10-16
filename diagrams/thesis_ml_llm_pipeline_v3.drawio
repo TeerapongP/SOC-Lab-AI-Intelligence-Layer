@@ -158,10 +158,10 @@
         <mxCell id="llm" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#854F0B;strokeColor=#633806;fontColor=#ffffff;fontSize=12;arcSize=8;" value="&lt;b&gt;Qwen3.5-35B-A3B  (LM Studio · Mac Mini M4 Pro 48 GB · local REST API)&lt;/b&gt;&lt;br/&gt;&lt;font style=&#39;font-size:10px&#39;&gt;Input: risk_score + alert_context + RAG TI context · Prompt: structured Thai template&lt;br/&gt;~40 tok/s · free · data residency ✓ · reproducibility: model weights + quantization level documented&lt;/font&gt;" vertex="1">
           <mxGeometry height="72" width="800" x="185" y="1014" as="geometry" />
         </mxCell>
-        <mxCell id="llm_out" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#633806;strokeColor=#412402;fontColor=#ffffff;fontSize=12;arcSize=8;" value="&lt;b&gt;LLM structured output  (JSON · ภาษาไทย)&lt;/b&gt;&lt;br/&gt;&lt;font style=&#39;font-size:10px&#39;&gt;priority: HIGH/MEDIUM/LOW · explanation_th: คำอธิบาย · mitre_tactic: Txxxx · affected_asset: hostname&lt;br/&gt;remediation: [step1, step2, step3] · faithfulness_score · hallucination_rate · response_ms: ~2400&lt;/font&gt;" vertex="1">
+        <mxCell id="llm_out" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#633806;strokeColor=#412402;fontColor=#ffffff;fontSize=12;arcSize=8;" value="&lt;b&gt;LLM structured output  (JSON · ภาษาไทย)&lt;/b&gt;&lt;br/&gt;&lt;font style=&#39;font-size:10px&#39;&gt;priority: HIGH/MEDIUM/LOW · explanation_th: คำอธิบาย · mitre_tactic: Txxxx · affected_asset: hostname&lt;br/&gt;remediation: [step1, step2, step3] · response_ms: ~2400&lt;/font&gt;" vertex="1">
           <mxGeometry height="64" width="800" x="185" y="1106" as="geometry" />
         </mxCell>
-        <mxCell id="tag_m2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0F6E56;strokeColor=#085041;fontColor=#ffffff;fontSize=10;arcSize=8;" value="&lt;b&gt;M2&lt;/b&gt;&lt;br/&gt;Faithfulness score&lt;br/&gt;Hallucination rate" vertex="1">
+        <mxCell id="tag_m2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0F6E56;strokeColor=#085041;fontColor=#ffffff;fontSize=10;arcSize=8;" value="&lt;b&gt;M2 (paused)&lt;/b&gt;&lt;br/&gt;Pending ground-truth evaluation definition" vertex="1">
           <mxGeometry height="40" width="140" x="30" y="1106" as="geometry" />
         </mxCell>
         <mxCell id="tag_m3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0F6E56;strokeColor=#085041;fontColor=#ffffff;fontSize=10;arcSize=8;" value="&lt;b&gt;M3&lt;/b&gt;&lt;br/&gt;Expert rating 1–5&lt;br/&gt;Thai utility score" vertex="1">
@@ -206,7 +206,7 @@
         <mxCell id="mt2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#085041;strokeColor=#04342C;fontColor=#ffffff;fontSize=11;arcSize=8;" value="&lt;b&gt;M1b&lt;/b&gt;&lt;br/&gt;&lt;font style=&#39;font-size:10px&#39;&gt;MTTD&lt;br/&gt;inject→detect&lt;br/&gt;(seconds)&lt;/font&gt;" vertex="1">
           <mxGeometry height="76" width="148" x="345" y="1308" as="geometry" />
         </mxCell>
-        <mxCell id="mt3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#085041;strokeColor=#04342C;fontColor=#ffffff;fontSize=11;arcSize=8;" value="&lt;b&gt;M2 + M3&lt;/b&gt;&lt;br/&gt;&lt;font style=&#39;font-size:10px&#39;&gt;Faithfulness&lt;br/&gt;Hallucination rate&lt;br/&gt;Expert rating 1–5&lt;/font&gt;" vertex="1">
+        <mxCell id="mt3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#085041;strokeColor=#04342C;fontColor=#ffffff;fontSize=11;arcSize=8;" value="&lt;b&gt;M2 paused + M3&lt;/b&gt;&lt;br/&gt;&lt;font style=&#39;font-size:10px&#39;&gt;M2 needs a ground-truth evaluation method&lt;br/&gt;Expert rating 1–5&lt;/font&gt;" vertex="1">
           <mxGeometry height="76" width="148" x="505" y="1308" as="geometry" />
         </mxCell>
         <mxCell id="mt_rag" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#085041;strokeColor=#04342C;fontColor=#ffffff;fontSize=11;arcSize=8;" value="&lt;b&gt;M_RAG&lt;/b&gt;&lt;br/&gt;&lt;font style=&#39;font-size:10px&#39;&gt;Retrieval&lt;br/&gt;precision@3&lt;br/&gt;(new metric)&lt;/font&gt;" vertex="1">

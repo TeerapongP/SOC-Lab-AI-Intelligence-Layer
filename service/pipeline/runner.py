@@ -26,7 +26,6 @@ class EnrichmentPipeline:
 
     Handles SIGINT / SIGTERM for graceful shutdown.
     """
-
     def __init__(
         self,
         consumer: KafkaConsumer,
@@ -45,7 +44,6 @@ class EnrichmentPipeline:
         signal.signal(signal.SIGINT,  self._handle_shutdown)
         signal.signal(signal.SIGTERM, self._handle_shutdown)
 
-    # ── Public ─────────────────────────────────────────────────────────────────
 
     def run(self) -> None:
         log.info(
@@ -61,7 +59,6 @@ class EnrichmentPipeline:
         finally:
             self._shutdown()
 
-    # ── Private ────────────────────────────────────────────────────────────────
 
     def _process(self, raw: dict) -> None:
         try:

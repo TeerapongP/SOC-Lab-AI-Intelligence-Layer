@@ -179,26 +179,30 @@ From repository root:
 docker compose -f network/docker-compose.network.yml up -d
 ```
 
-### 2) Start Kafka stack
+### 2) Configure secrets and start OpenCTI
+
+Copy `opencti/.env.example` to `opencti/.env`, then supply unique credentials and API keys. Use the platform admin token only for the platform. Create separate OpenCTI tokens for the worker and each connector, with only the permissions each integration needs. Create a service token with read access for `service/.env.example`, then copy it to `service/.env`. Set `ELASTIC_PASSWORD` in `observability/.env` to match `opencti/.env`.
 
 ```bash
-docker compose -f grafana/docker-compose.yml up -d
+docker compose --env-file opencti/.env -f opencti/docker-compose.yml up -d
 ```
 
-### 3) Prepare OpenCTI environment
+### 3) Start observability, Grafana, Kafka, and notifications
 
-Create `.env` (either root or `service/.env`) and set required OpenCTI and connector values, at minimum:
+Copy `observability/.env.example` to `observability/.env` and fill in InfluxDB credentials and the Elastic password. After OpenCTI and Elasticsearch are healthy, set a password for Elasticsearch's built-in Kibana account and put it in `KIBANA_SYSTEM_PASSWORD` in `observability/.env`:
 
 ```bash
-OPENCTI_TOKEN=your_opencti_admin_token
-OPENCTI_URL=http://localhost:8082
-KAFKA_BOOTSTRAP=127.0.0.1:9092
+docker compose --env-file opencti/.env -f opencti/docker-compose.yml exec opencti-elasticsearch bin/elasticsearch-reset-password -u kibana_system -i
+docker compose --env-file observability/.env -f observability/docker-compose.yml up -d
 ```
 
-Then start OpenCTI:
+Copy `notification/.env.example` to `notification/.env`. Use distinct InfluxDB write and read tokens for `INFLUX_TOKEN` and `INFLUX_READER_TOKEN`, and distinct Elasticsearch write and read API keys. Set `RABBITMQ_URL` to the host-published RabbitMQ address for local runs and `RABBITMQ_DOCKER_URL` to the OpenCTI RabbitMQ service on the internal network; URL-encode reserved password characters in both.
+
+Faithfulness scoring is paused until an evaluation method is defined against ground truth; the pipeline and dashboards do not produce faithfulness or hallucination metrics.
 
 ```bash
-docker compose -f opencti/docker-compose.yml up -d
+docker compose --env-file notification/.env -f grafana/docker-compose.yml up -d
+docker compose --env-file notification/.env -f notification/docker-compose.yml up -d
 ```
 
 ### 4) Install Python dependencies

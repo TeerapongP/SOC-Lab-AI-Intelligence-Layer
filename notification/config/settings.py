@@ -31,7 +31,7 @@ def _list(key: str, default: str = "") -> List[str]:
 
 
 class _Settings:
-    # Kafka
+
     KAFKA_BOOTSTRAP: str = os.getenv("KAFKA_BOOTSTRAP", "localhost:9092")
     KAFKA_LLM_OUTPUT_TOPIC: str = os.getenv("KAFKA_LLM_OUTPUT_TOPIC", "pa5220.llm_output")
     KAFKA_LLM_DLQ_TOPIC: str = os.getenv("KAFKA_LLM_DLQ_TOPIC", "pa5220.llm_output.dlq")
@@ -39,26 +39,26 @@ class _Settings:
     KAFKA_AUTO_OFFSET: str = os.getenv("KAFKA_AUTO_OFFSET", "latest")
     KAFKA_CONNECT_RETRIES: int = int(os.getenv("KAFKA_CONNECT_RETRIES", "10"))
 
-    # LINE Messaging API
+
     LINE_CHANNEL_ACCESS_TOKEN: str = os.getenv("LINE_CHANNEL_ACCESS_TOKEN", "")
     LINE_GRAFANA_BASE_URL: str = os.getenv("LINE_GRAFANA_BASE_URL", "http://localhost:3000")
 
-    # RabbitMQ EventBus
+
     RABBITMQ_URL: str = os.getenv("RABBITMQ_URL", "amqp://guest:guest@localhost:5672/")
     RABBITMQ_EXCHANGE: str = os.getenv("RABBITMQ_EXCHANGE", "soc.alerts")
 
-    # InfluxDB
+
     INFLUX_URL: str = os.getenv("INFLUX_URL", "http://localhost:8086")
     INFLUX_TOKEN: str = os.getenv("INFLUX_TOKEN", "")
     INFLUX_ORG: str = os.getenv("INFLUX_ORG", "soc")
     INFLUX_BUCKET: str = os.getenv("INFLUX_BUCKET", "alerts")
 
-    # Elasticsearch
+
     ELASTIC_URL: str = os.getenv("ELASTIC_URL", "http://localhost:9200")
     ELASTIC_API_KEY: str = os.getenv("ELASTIC_API_KEY", "")
     ELASTIC_ALERT_INDEX: str = os.getenv("ELASTIC_ALERT_INDEX", "soc-alerts")
 
-    # Grafana
+
     GRAFANA_URL: str = os.getenv("GRAFANA_URL", "http://localhost:3000")
 
 

@@ -4,9 +4,7 @@ import sys
 import types
 from pathlib import Path
 
-# Make `enrich.*` imports work when running this file as a script.
-# `enrich.config` lives under service/config, while `enrich.enricher`
-# lives under service/enrich/enricher.py, so expose both roots.
+
 _SERVICE_ROOT = Path(__file__).resolve().parent
 _ENRICH_DIR = _SERVICE_ROOT / "enrich"
 

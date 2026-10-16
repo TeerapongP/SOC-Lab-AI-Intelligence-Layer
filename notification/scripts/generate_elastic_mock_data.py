@@ -58,7 +58,6 @@ def _build_doc(ts: datetime, i: int) -> dict:
         priority = "LOW"
 
     response_ms = int(max(180.0, 850.0 + 6.5 * risk + random.uniform(-140.0, 190.0)))
-    faithfulness = max(0.55, min(1.0, 0.96 - risk / 620.0 + random.uniform(-0.03, 0.02)))
     ioc_conf = max(0.0, min(1.0, risk / 100.0 + random.uniform(-0.1, 0.08)))
     mttd_s = max(4.0, 170.0 - risk + random.uniform(-16.0, 22.0))
 
@@ -81,8 +80,6 @@ def _build_doc(ts: datetime, i: int) -> dict:
         "model_used": model,
         "ensemble_confidence": round(min(0.99, max(0.3, risk / 100.0 + random.uniform(-0.08, 0.06))), 3),
         "response_ms": response_ms,
-        "faithfulness_score": round(faithfulness, 4),
-        "hallucination_rate": round(max(0.0, min(0.3, 0.08 - faithfulness / 10.0 + random.uniform(-0.01, 0.015))), 4),
         "ioc_confidence": round(ioc_conf, 4),
         "mttd_s": round(mttd_s, 2),
         "source": "mockgen",
@@ -107,7 +104,7 @@ def _bulk_index(url: str, api_key: str, payload: bytes) -> tuple[int, str]:
 
     resp = requests.post(endpoint, headers=headers, data=payload, timeout=60)
     if resp.status_code in (401, 403) and api_key:
-        # Fallback for clusters with security disabled or mismatched key.
+
         resp = requests.post(
             endpoint,
             headers={"Content-Type": "application/x-ndjson"},

@@ -24,13 +24,12 @@ class DeadLetterQueue:
     Each DLQ record wraps the original raw bytes with error context so
     a human (or reprocessing job) can inspect and replay later.
     """
-
     def __init__(self, source_topic: str) -> None:
         self._topic = source_topic + _DLQ_TOPIC_SUFFIX
         self._producer = KafkaProducer(
             bootstrap_servers=KAFKA_BOOTSTRAP,
             value_serializer=lambda v: json.dumps(v).encode("utf-8"),
-            acks=1,          # fire-and-forget is acceptable for DLQ
+            acks=1,
             retries=2,
         )
         log.info("DLQ ready (topic=%s)", self._topic)

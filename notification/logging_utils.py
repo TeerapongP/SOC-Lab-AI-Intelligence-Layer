@@ -15,11 +15,11 @@ def setup_logging(level: int = logging.INFO) -> None:
         datefmt = "%Y-%m-%d %H:%M:%S",
     ))
     root = logging.getLogger()
-    if not root.handlers:          # avoid duplicate handlers on reload
+    if not root.handlers:
         root.addHandler(handler)
     root.setLevel(level)
 
-    # Keep third-party client startup/reconnect chatter out of normal logs.
+
     logging.getLogger("kafka").setLevel(logging.WARNING)
     logging.getLogger("pika").setLevel(logging.CRITICAL)
     logging.getLogger("elastic_transport").setLevel(logging.WARNING)
