@@ -10,7 +10,6 @@ class FifoCache(Generic[V]):
     Simple fixed-size FIFO cache.
     Evicts oldest 10% of entries when capacity is reached.
     """
-
     def __init__(self, maxsize: int = 5_000) -> None:
         self._maxsize = maxsize
         self._store: dict[str, V] = {}

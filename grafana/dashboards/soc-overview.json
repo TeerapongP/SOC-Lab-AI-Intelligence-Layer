@@ -57,18 +57,11 @@
     },
     {
       "id": 4,
-      "title": "Faithfulness Score",
-      "type": "gauge",
-      "datasource": {"type": "influxdb", "uid": "influx-soc"},
+      "title": "Faithfulness Metric (Paused)",
+      "description": "No faithfulness value is produced until an evaluation method is defined against ground truth.",
+      "type": "text",
       "gridPos": {"x": 6, "y": 8, "w": 6, "h": 7},
-      "targets": [
-        {
-          "refId": "A",
-          "query": "from(bucket: \"alerts\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"soc_alert\" and r._field == \"faithfulness_score\")\n  |> mean()"
-        }
-      ],
-      "fieldConfig": {"defaults": {"min": 0, "max": 1, "unit": "percentunit"}, "overrides": []},
-      "options": {"reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}}
+      "options": {"mode": "markdown", "content": "Faithfulness scoring is paused until its method is defined against evaluation ground truth. No faithfulness or hallucination metric is currently produced."}
     },
     {
       "id": 5,

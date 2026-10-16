@@ -19,7 +19,6 @@ class ElasticsearchWriter:
     Doc id:   alert.alert_id  — idempotent re-index on replay
     Mapping:  dynamic (no explicit mapping needed for thesis scope)
     """
-
     def __init__(self) -> None:
         try:
             kwargs: dict = {"hosts": [settings.ELASTIC_URL]}
@@ -37,13 +36,13 @@ class ElasticsearchWriter:
             return
 
         doc = alert.to_dict()
-        # Add ingested_at for Kibana time filter
+
         doc["ingested_at"] = datetime.now(tz=timezone.utc).isoformat()
 
         try:
             self._es.index(
                 index      = settings.ELASTIC_ALERT_INDEX,
-                id         = alert.alert_id,   # idempotent
+                id         = alert.alert_id,
                 document   = doc,
             )
             log.debug("Elasticsearch indexed — alert_id=%s", alert.alert_id)

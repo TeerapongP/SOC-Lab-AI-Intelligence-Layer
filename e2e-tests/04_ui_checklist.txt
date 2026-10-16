@@ -8,8 +8,8 @@ Kafka UI
 RabbitMQ UI
 - URL: http://localhost:15672
 - Login with user/password from opencti/.env
-- Go to Exchanges -> soc.events
-- Check bindings for alert.high, alert.medium, alert.low
+- Go to Exchanges -> soc.alerts
+- Check bindings for alert.HIGH, alert.MEDIUM, alert.LOW
 - Go to Queues and Streams -> e2e.alert.high / e2e.alert.medium / e2e.alert.low
 - In Get messages:
   - Ack mode: Reject requeue true (if you do not want message removed)

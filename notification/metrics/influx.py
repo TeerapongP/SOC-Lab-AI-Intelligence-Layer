@@ -17,10 +17,8 @@ class MetricsWriter:
 
     Measurement: soc_alert
     Tags:        priority, anomaly_type, mitre_tactic, model_used
-    Fields:      risk_score, mttd_s, faithfulness_score, response_ms,
-                 ioc_confidence, actor_known
+    Fields:      risk_score, mttd_s, response_ms, ioc_confidence, actor_known
     """
-
     def __init__(self) -> None:
         try:
             self._client = InfluxDBClient(
@@ -50,7 +48,6 @@ class MetricsWriter:
             },
             "fields": {
                 "risk_score":         alert.risk_score,
-                "faithfulness_score": alert.faithfulness_score,
                 "response_ms":        alert.response_ms,
                 "ioc_confidence":     alert.ioc_confidence,
                 "actor_known":        int(alert.actor_known),

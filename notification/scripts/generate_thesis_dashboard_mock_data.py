@@ -82,7 +82,7 @@ def build_lines(start: datetime, end: datetime, step_seconds: int) -> list[str]:
     while t <= end:
         ns = _to_ns(t)
 
-        # L1: ingest rate / hour with daily wave + incident spikes
+
         wave = 320 + 120 * (1 + math.sin(i / 90.0))
         incident_boost = 0
         if 180 <= i <= 240 or 720 <= i <= 780:
@@ -94,7 +94,7 @@ def build_lines(start: datetime, end: datetime, step_seconds: int) -> list[str]:
             f"ingest_rate={ingest_rate:.2f} {ns}"
         )
 
-        # L2: enrichment latency + IoC match rate
+
         enrich_latency = max(20.0, 140 + 0.2 * ingest_rate + random.uniform(-15, 30))
         ioc_match_rate = max(0.02, min(0.95, 0.25 + random.uniform(-0.08, 0.18)))
 
@@ -103,7 +103,7 @@ def build_lines(start: datetime, end: datetime, step_seconds: int) -> list[str]:
             f"enrich_latency_ms={enrich_latency:.2f},ioc_match_rate={ioc_match_rate:.4f} {ns}"
         )
 
-        # L3 + LLM: alert metrics
+
         risk_wave = 30 + 25 * (1 + math.sin(i / 55.0))
         risk = max(1.0, min(99.0, risk_wave + incident_boost * 0.12 + random.uniform(-10, 10)))
 
@@ -115,7 +115,6 @@ def build_lines(start: datetime, end: datetime, step_seconds: int) -> list[str]:
             priority = priorities[0]
 
         response_ms = int(max(200, 900 + 7 * risk + random.uniform(-180, 220)))
-        faithfulness = max(0.6, min(1.0, 0.96 - risk / 600 + random.uniform(-0.03, 0.02)))
         mttd_s = max(4.0, 170 - risk + random.uniform(-18, 20))
         ioc_conf = max(0.0, min(1.0, risk / 100 + random.uniform(-0.12, 0.08)))
         actor_known = 1 if random.random() < (0.12 + risk / 220) else 0
@@ -128,7 +127,7 @@ def build_lines(start: datetime, end: datetime, step_seconds: int) -> list[str]:
             "soc_alert,"
             f"priority={priority},anomaly_type={anomaly},mitre_tactic={tactic},model_used={model},source=mockgen "
             f"risk_score={risk:.2f},mttd_s={mttd_s:.2f},response_ms={response_ms}i,"
-            f"faithfulness_score={faithfulness:.4f},ioc_confidence={ioc_conf:.4f},actor_known={actor_known}i {ns}"
+            f"ioc_confidence={ioc_conf:.4f},actor_known={actor_known}i {ns}"
         )
 
         t += timedelta(seconds=step_seconds)

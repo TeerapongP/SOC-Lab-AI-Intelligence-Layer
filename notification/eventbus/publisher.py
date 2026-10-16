@@ -18,7 +18,6 @@ class EventBus:
     Publishes alert events to RabbitMQ.
     Topic routing key: alert.<priority>, for example alert.HIGH.
     """
-
     def __init__(self) -> None:
         self._conn: pika.BlockingConnection | None = None
         self._channel: pika.channel.Channel | None = None

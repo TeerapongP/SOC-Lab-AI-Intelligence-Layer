@@ -24,41 +24,37 @@ class LLMAlert:
     Parsed output from pa5220.llm_output Kafka topic.
     All fields map 1-to-1 with the JSON schema produced by the LLM layer.
     """
-
-    # ── Identity ───────────────────────────────────────────────────────────────
     alert_id:          str
-    timestamp:         str           # ISO-8601 UTC
+    timestamp:         str
 
-    # ── Network ───────────────────────────────────────────────────────────────
+
     source_ip:         str
     dst_port:          int
 
-    # ── Classification ────────────────────────────────────────────────────────
+
     priority:          Priority
-    risk_score:        int           # 0–100
-    anomaly_type:      str           # e.g. "BruteForce", "C2", "Exfil"
-    mitre_tactic:      str           # e.g. "Credential Access"
-    mitre_technique:   str           # e.g. "T1110"
-    model_used:        str           # e.g. "ensemble", "isolation_forest"
+    risk_score:        int
+    anomaly_type:      str
+    mitre_tactic:      str
+    mitre_technique:   str
+    model_used:        str
 
-    # ── LLM output ────────────────────────────────────────────────────────────
-    explanation_th:    str           # Thai explanation (2+ sentences)
-    remediation:       list[str]     # ordered remediation steps
-    top_3_features:    list[str]     # top SHAP features
 
-    # ── Quality metrics ───────────────────────────────────────────────────────
-    faithfulness_score: float        # RAG faithfulness 0.0–1.0
-    response_ms:        int          # LLM inference latency ms
+    explanation_th:    str
+    remediation:       list[str]
+    top_3_features:    list[str]
 
-    # ── Optional ──────────────────────────────────────────────────────────────
-    mttd_s:            float | None = None   # Mean Time To Detect (seconds)
+
+    response_ms:        int
+
+
+    mttd_s:            float | None = None
     actor_known:       bool         = False
     ioc_confidence:    float        = 0.0
 
-    # ── Extra fields (forward-compat) ─────────────────────────────────────────
+
     extra:             dict[str, Any] = field(default_factory=dict)
 
-    # ── Constructor ───────────────────────────────────────────────────────────
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "LLMAlert":
@@ -71,7 +67,7 @@ class LLMAlert:
             "alert_id", "timestamp", "source_ip", "dst_port",
             "priority", "risk_score", "anomaly_type", "mitre_tactic",
             "mitre_technique", "model_used", "explanation_th",
-            "remediation", "top_3_features", "faithfulness_score",
+            "remediation", "top_3_features", "faithfulness_score", "hallucination_rate",
             "response_ms", "mttd_s", "actor_known", "ioc_confidence",
         }
         extra = {k: v for k, v in data.items() if k not in known_fields}
@@ -90,7 +86,6 @@ class LLMAlert:
             explanation_th    = str(data["explanation_th"]),
             remediation       = list(data.get("remediation", [])),
             top_3_features    = list(data.get("top_3_features", [])),
-            faithfulness_score= float(data.get("faithfulness_score", 0.0)),
             response_ms       = int(data.get("response_ms", 0)),
             mttd_s            = float(data["mttd_s"]) if data.get("mttd_s") is not None else None,
             actor_known       = bool(data.get("actor_known", False)),
@@ -114,7 +109,6 @@ class LLMAlert:
             "explanation_th":     self.explanation_th,
             "remediation":        self.remediation,
             "top_3_features":     self.top_3_features,
-            "faithfulness_score": self.faithfulness_score,
             "response_ms":        self.response_ms,
             "mttd_s":             self.mttd_s,
             "actor_known":        self.actor_known,

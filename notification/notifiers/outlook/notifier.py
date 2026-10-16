@@ -22,7 +22,6 @@ _TIMEOUT_S = 15
 
 class OutlookNotifier:
     """Send immediate alerts and daily digests via Microsoft Graph sendMail."""
-
     def __init__(self) -> None:
         self._token: str | None = None
         self._token_expiry: datetime = datetime.now(timezone.utc)

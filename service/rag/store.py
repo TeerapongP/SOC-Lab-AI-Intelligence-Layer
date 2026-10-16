@@ -16,7 +16,6 @@ log = get_logger("rag.store")
 @dataclass
 class StixChunk:
     """Approximate 500-token STIX text chunk ready for embedding."""
-
     chunk_id: str
     text: str
     ioc_value: str
@@ -41,7 +40,6 @@ class HybridVectorStore:
     """
     Hybrid RAG store: BM25 exact-ish match plus dense vector semantic search.
     """
-
     def __init__(self) -> None:
         self._collection = None
         self._bm25 = None

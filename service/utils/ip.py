@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import ipaddress
 
-# RFC-1918, loopback, link-local, unspecified
+
 _PRIVATE_NETWORKS = [
     ipaddress.ip_network(cidr)
     for cidr in (

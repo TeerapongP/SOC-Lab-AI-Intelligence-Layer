@@ -12,10 +12,6 @@ class WeakLabel(str, Enum):
     UNKNOWN = "unknown"
 
 
-# ── Heuristic rules ────────────────────────────────────────────────────────────
-# Each rule is a (predicate, label) pair evaluated in order.
-# First match wins. Rules can be extended without touching the core logic.
-
 def _rule_high_confidence(rec: EnrichedRecord) -> WeakLabel | None:
     if rec.ioc_confidence >= CONF_ATTACK_MIN:
         return WeakLabel.ATTACK
@@ -61,8 +57,6 @@ _RULES = [
     _rule_low_confidence,
 ]
 
-
-# ── Public API ─────────────────────────────────────────────────────────────────
 
 def assign_label(rec: EnrichedRecord) -> WeakLabel:
     """

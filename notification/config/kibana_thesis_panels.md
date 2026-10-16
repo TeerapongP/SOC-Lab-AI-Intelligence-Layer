@@ -36,13 +36,9 @@ Use data view `soc-alerts*` and time field `timestamp`.
 - X-axis: Date histogram on `timestamp`
 - Y-axis: Average of `mttd_s`
 
-## Panel 7: LLM Faithfulness Score
-- Type: Gauge
-- Metric: Average of `faithfulness_score`
-- Filter: `layer : "LLM"`
-- Range: 0 to 1
+Faithfulness scoring is paused until its evaluation method is defined against ground truth. Do not present faithfulness or hallucination metrics.
 
-## Panel 8: Latest Events Table
+## Panel 7: Latest Events Table
 - Type: Data Table
 - Sort: `timestamp` desc
 - Columns:
@@ -54,7 +50,6 @@ Use data view `soc-alerts*` and time field `timestamp`.
   - `anomaly_type`
   - `mitre_tactic`
   - `response_ms`
-  - `faithfulness_score`
 
 ## Quick Filters (KQL)
 - All thesis mock docs: `event_type : "e2e" and source : "mockgen"`
